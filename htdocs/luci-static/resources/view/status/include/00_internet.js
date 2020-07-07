@@ -6,11 +6,14 @@ return L.Class.extend({
 
 	hosts: [
 		'8.8.8.8',
+		'2a00:1450:4010:c05::71',
 		'1.1.1.1',
-		'8.8.4.4',
+		'2606:4700::6811:b055',
+		//'8.8.4.4',
+		//'2a00:1450:4010:c09::66',
 	],
 
-	checkInterval: 11,		// 5 x 11 = 55 sec.
+	checkInterval: 6,		// 5 x 6 = 30 sec.
 
 	load: async function() {
 		window.internetDetectorCounter = ('internetDetectorCounter' in window) ?

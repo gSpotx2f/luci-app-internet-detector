@@ -3,7 +3,7 @@
 		"description": "Grant access to internet-detector procedures",
 		"read": {
 			"file": {
-				"/bin/ping -c 1 -W 1 [0-9.]*": [ "exec" ]
+				"/bin/ping -c 1 -W 1 [a-z0-9:.]*": [ "exec" ]
 			}
 		}
 	}
