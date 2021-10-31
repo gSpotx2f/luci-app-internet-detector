@@ -1,0 +1,217 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.2\n"
+"Last-Translator: \n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+"Language: ru\n"
+
+msgid "Alive interval"
+msgstr "Интервал при подключении"
+
+msgid "An error has occurred"
+msgstr "Произошла ошибка"
+
+msgid "Check type"
+msgstr "Тип проверки"
+
+msgid "Checking Internet availability."
+msgstr "Проверка доступности Интернет."
+
+msgid "Command failed"
+msgstr "Команда не выполнена"
+
+msgid "Connected"
+msgstr "Подключен"
+
+msgid "Connection timeout"
+msgstr "Таймаут соединения"
+
+msgid "Connections"
+msgstr "Подключения"
+
+msgid "Contents have been saved."
+msgstr "Содержимое сохранено."
+
+msgid "Dead interval"
+msgstr "Интервал при отключении"
+
+msgid "Default port value for TCP connections"
+msgstr "Стандартное значение порта для TCP-подключений"
+
+msgid "Disabled"
+msgstr "Отключен"
+
+msgid "Disabled: detector is completely off"
+msgstr "Отключен: детектор полностью выключен"
+
+msgid "Disconnected"
+msgstr "Отключен"
+
+msgid "Dismiss"
+msgstr "Отмена"
+
+msgid "Edit"
+msgstr "Изменить"
+
+msgid "Edit down-script"
+msgstr "Изменить down-script"
+
+msgid "Edit run-script"
+msgstr "Изменить run-script"
+
+msgid "Edit up-script"
+msgstr "Изменить up-script"
+
+msgid "Enable down-script"
+msgstr "Включить down-script"
+
+msgid "Enable logging"
+msgstr "Включить логирование"
+
+msgid "Enable run-script"
+msgstr "Включить run-script"
+
+msgid "Enable up-script"
+msgstr "Включить up-script"
+
+msgid "Enabled"
+msgstr "Включен"
+
+msgid "Execute commands every time the Internet is checked for availability"
+msgstr "Выполнение команд при каждой проверке доступности Интернет"
+
+msgid "Execute commands when the Internet is connected"
+msgstr "Выполнение команд при подключении к Интернет"
+
+msgid "Execute commands when the Internet is disconnected"
+msgstr "Выполнение команд при отключении от Интернет"
+
+msgid "Failed to execute \"%s %s\": %s"
+msgstr "Не удалось выполнить \"%s %s\": %s"
+
+msgid "Host availability check type"
+msgstr "Тип проверки доступности хоста"
+
+msgid "Hosts"
+msgstr "Хосты"
+
+msgid "Hosts polling interval when the Internet is down"
+msgstr "Интервал опроса хостов если Интернет не доступен"
+
+msgid "Hosts polling interval when the Internet is up"
+msgstr "Интервал опроса хостов если Интернет доступен"
+
+msgid "Hosts to check Internet availability. Hosts are polled (in list order) until at least one of them responds"
+msgstr "Хосты для проверки доступности Интернет. Хосты опрашиваются (в порядке списка) до тех пор, пока хотя бы один из них не ответит"
+
+msgid "Internet"
+msgstr "Интернет"
+
+msgid "Internet detector"
+msgstr "Интернет-детектор"
+
+msgid "Internet detector mode"
+msgstr "Режим интернет-детектора"
+
+msgid "Internet status"
+msgstr "Статус Интернет"
+
+msgid "Loading"
+msgstr "Загрузка"
+
+msgid "Main settings"
+msgstr "Основные настройки"
+
+msgid "Maximum timeout for waiting for a response from the host"
+msgstr "Маскимальный таймаут ожидания ответа от хоста"
+
+msgid "Maximum number of attempts to connect to each host"
+msgstr "Максимальное количество попыток подключения к каждому хосту"
+
+msgid "Ping host"
+msgstr "Пинг хоста"
+
+msgid "Restart"
+msgstr "Перезапуск"
+
+msgid "Restart service"
+msgstr "Перезапуск службы"
+
+msgid "Run service at startup"
+msgstr "Запуск службы при старте"
+
+msgid "Running"
+msgstr "Выполняется"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Service"
+msgstr "Служба"
+
+msgid "Service configuration"
+msgstr "Конфигурация службы"
+
+msgid "Service: detector always runs as a system service"
+msgstr "Служба: детектор работает постоянно, как системная служба"
+
+msgid "Shell commands that are executed every time the Internet is checked for availability"
+msgstr "Команды shell выполняемые при каждой проверке доступности Интернет"
+
+msgid "Shell commands that run when connected to the Internet"
+msgstr "Команды shell выполняемые при подключении к Интернет"
+
+msgid "Shell commands to run when disconnected from the Internet"
+msgstr "Команды shell выполняемые при отключении от Интернет"
+
+msgid "Stopped"
+msgstr "Остановлена"
+
+msgid "TCP port"
+msgstr "TCP-порт"
+
+msgid "TCP port connection"
+msgstr "Подключение к TCP-порту"
+
+msgid "UI detector configuration"
+msgstr "Конфигурация UI детектора"
+
+msgid "Unable to read the contents"
+msgstr "Невозможно прочитать содержимое"
+
+msgid "Unable to save the contents"
+msgstr "Невозможно сохранить содержимое"
+
+msgid "Undefined"
+msgstr "Неопределён"
+
+msgid "Web UI only"
+msgstr "Только web-интерфейс"
+
+msgid "Web UI only: detector works only when the Web UI is open (UI detector)"
+msgstr "Только web-интерфейс: детектор работает только в web-интерфейсе (UI детектор)"
+
+msgid "Write messages to the system log"
+msgstr "Записывать сообщения в системный журнал"
+
+msgid "down-script"
+msgstr ""
+
+msgid "min"
+msgstr "мин"
+
+msgid "run-script"
+msgstr ""
+
+msgid "sec"
+msgstr "сек"
+
+msgid "up-script"
+msgstr ""

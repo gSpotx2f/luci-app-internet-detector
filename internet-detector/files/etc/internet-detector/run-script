@@ -1,0 +1,4 @@
+#	Shell commands that are executed every time the Internet is checked for availability
+#
+#	$1 - (0|1) - internet status: 0 is up, 1 is down
+#

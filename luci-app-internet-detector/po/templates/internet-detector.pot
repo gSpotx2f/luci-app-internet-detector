@@ -1,0 +1,203 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+msgid "Alive interval"
+msgstr ""
+
+msgid "An error has occurred"
+msgstr ""
+
+msgid "Check type"
+msgstr ""
+
+msgid "Checking Internet availability."
+msgstr ""
+
+msgid "Command failed"
+msgstr ""
+
+msgid "Connected"
+msgstr ""
+
+msgid "Connection timeout"
+msgstr ""
+
+msgid "Connections"
+msgstr ""
+
+msgid "Contents have been saved."
+msgstr ""
+
+msgid "Dead interval"
+msgstr ""
+
+msgid "Default port value for TCP connections"
+msgstr ""
+
+msgid "Disabled"
+msgstr ""
+
+msgid "Disabled: detector is completely off"
+msgstr ""
+
+msgid "Disconnected"
+msgstr ""
+
+msgid "Dismiss"
+msgstr ""
+
+msgid "Edit"
+msgstr ""
+
+msgid "Edit down-script"
+msgstr ""
+
+msgid "Edit run-script"
+msgstr ""
+
+msgid "Edit up-script"
+msgstr ""
+
+msgid "Enable down-script"
+msgstr ""
+
+msgid "Enable logging"
+msgstr ""
+
+msgid "Enable run-script"
+msgstr ""
+
+msgid "Enable up-script"
+msgstr ""
+
+msgid "Enabled"
+msgstr ""
+
+msgid "Execute commands every time the Internet is checked for availability"
+msgstr ""
+
+msgid "Execute commands when the Internet is connected"
+msgstr ""
+
+msgid "Execute commands when the Internet is disconnected"
+msgstr ""
+
+msgid "Failed to execute \"%s %s\": %s"
+msgstr ""
+
+msgid "Host availability check type"
+msgstr ""
+
+msgid "Hosts"
+msgstr ""
+
+msgid "Hosts polling interval when the Internet is down"
+msgstr ""
+
+msgid "Hosts polling interval when the Internet is up"
+msgstr ""
+
+msgid "Hosts to check Internet availability. Hosts are polled (in list order) until at least one of them responds"
+msgstr ""
+
+msgid "Internet"
+msgstr ""
+
+msgid "Internet detector"
+msgstr ""
+
+msgid "Internet detector mode"
+msgstr ""
+
+msgid "Internet status"
+msgstr ""
+
+msgid "Loading"
+msgstr ""
+
+msgid "Main settings"
+msgstr ""
+
+msgid "Maximum timeout for waiting for a response from the host"
+msgstr ""
+
+msgid "Maximum number of attempts to connect to each host"
+msgstr ""
+
+msgid "Ping host"
+msgstr ""
+
+msgid "Restart"
+msgstr ""
+
+msgid "Restart service"
+msgstr ""
+
+msgid "Run service at startup"
+msgstr ""
+
+msgid "Running"
+msgstr ""
+
+msgid "Service"
+msgstr ""
+
+msgid "Service configuration"
+msgstr ""
+
+msgid "Service: detector always runs as a system service"
+msgstr ""
+
+msgid "Shell commands that are executed every time the Internet is checked for availability"
+msgstr ""
+
+msgid "Shell commands that run when connected to the Internet"
+msgstr ""
+
+msgid "Shell commands to run when disconnected from the Internet"
+msgstr ""
+
+msgid "Stopped"
+msgstr ""
+
+msgid "TCP port"
+msgstr ""
+
+msgid "TCP port connection"
+msgstr ""
+
+msgid "UI detector configuration"
+msgstr ""
+
+msgid "Unable to read the contents"
+msgstr ""
+
+msgid "Unable to save the contents"
+msgstr ""
+
+msgid "Undefined"
+msgstr ""
+
+msgid "Web UI only"
+msgstr ""
+
+msgid "Web UI only: detector works only when the Web UI is open (UI detector)"
+msgstr ""
+
+msgid "Write messages to the system log"
+msgstr ""
+
+msgid "down-script"
+msgstr ""
+
+msgid "min"
+msgstr ""
+
+msgid "run-script"
+msgstr ""
+
+msgid "sec"
+msgstr ""
+
+msgid "up-script"
+msgstr ""

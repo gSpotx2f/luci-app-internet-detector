@@ -1,0 +1,391 @@
+#!/usr/bin/env lua
+
+--[[
+	Internet detector daemon for OpenWrt.
+
+	Dependences:
+		lua
+		luci-lib-nixio
+		libuci-lua
+
+	(с) 2021 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
+--]]
+
+-- Default settings
+
+local Config = {
+	["mode"]                 = 2,
+	["enableLogger"]         = 1,
+	["enableUpScript"]       = 0,
+	["enableDownScript"]     = 0,
+	["enableRunScript"]      = 0,
+	["intervalUp"]           = 30,
+	["intervalDown"]         = 5,
+	["connectionAttempts"]   = 1,
+	["UIConnectionAttempts"] = 1,
+	["hosts"]                = {
+		[1] = "8.8.8.8",
+		[2] = "1.1.1.1",
+	},
+	["parsedHosts"]          = {},
+	["appName"]              = "internet-detector",
+	["commonDir"]            = "/tmp/run",
+	["pingCmd"]              = "ping",
+	["pingParams"]           = "-c 1",
+	["connectionTimeout"]    = 3,
+	["UIConnectionTimeout"]  = 1,
+	["tcpPort"]              = 53,
+	["checkType"]            = 0,    -- 0: ping, 1: TCP
+	["loggerLevel"]          = "info",
+	--["loggerCmd"]          = "logger",
+}
+Config.configDir  = "/etc/" .. Config.appName
+Config.upScript   = Config.configDir .. "/" .. "up-script"
+Config.downScript = Config.configDir .. "/" .. "down-script"
+Config.runScript  = Config.configDir .. "/" .. "run-script"
+Config.pidFile    = Config.commonDir .. "/" .. Config.appName .. ".pid"
+Config.statusFile = Config.commonDir .. "/" .. Config.appName .. ".status"
+
+-- Import packages
+
+local function prequire(package)
+	local retVal, pkg = pcall(require, package)
+	return retVal and pkg
+end
+
+local nixio = prequire("nixio")
+if not nixio then
+	error("You need to install nixio...")
+end
+
+local uci = prequire("uci")
+if uci then
+
+	-- Load settings from UCI
+
+	local cursor = uci.cursor()
+	Config.mode = cursor:get("internet-detector", "config", "mode")
+	Config.enableLogger = cursor:get("internet-detector", "config", "enable_logger")
+	Config.enableUpScript = cursor:get("internet-detector", "config", "enable_up_script")
+	Config.enableDownScript = cursor:get("internet-detector", "config", "enable_down_script")
+	Config.enableRunScript = cursor:get("internet-detector", "config", "enable_run_script")
+	Config.intervalUp = tonumber(cursor:get("internet-detector", "config", "interval_up"))
+	Config.intervalDown = tonumber(cursor:get("internet-detector", "config", "interval_down"))
+	Config.hosts = cursor:get("internet-detector", "config", "hosts")
+	Config.checkType = tonumber(cursor:get("internet-detector", "config", "check_type"))
+	Config.connectionAttempts = tonumber(cursor:get("internet-detector", "config", "connection_attempts"))
+	Config.connectionTimeout = tonumber(cursor:get("internet-detector", "config", "connection_timeout"))
+	Config.UIConnectionAttempts = tonumber(cursor:get("internet-detector", "config", "ui_connection_attempts"))
+	Config.UIConnectionTimeout = tonumber(cursor:get("internet-detector", "config", "ui_connection_timeout"))
+	Config.tcpPort = tonumber(cursor:get("internet-detector", "config", "tcp_port"))
+
+else
+	io.stderr:write("libuci-lua does not exists! The default settings will be used...\n")
+end
+
+local function writeValueToFile(filePath, str)
+	local retValue = false
+	local fh = io.open(filePath, "w")
+	if fh then
+		fh:setvbuf("no")
+		fh:write(string.format("%s\n", str))
+		fh:close()
+		retValue = true
+	end
+	return retValue
+end
+
+local function readValueFromFile(filePath)
+	local retValue
+	local fh = io.open(filePath, "r")
+	if fh then
+		retValue = fh:read("*l")
+		fh:close()
+	end
+	return retValue
+end
+
+local function writeLogMessage(msg)
+	if Config.enableLogger == "1" then
+		local pidValue = readValueFromFile(Config.pidFile)
+		--local fh = io.popen(string.format('%s -t "%s[%d]" -p daemon.%s "%s"', Config.loggerCmd, Config.appName, (pidValue or ""), Config.loggerLevel, msg), 'r')
+		--fh:close()
+		nixio.syslog(Config.loggerLevel, string.format("%s[%d]: %s", Config.appName, (pidValue or ""), msg))
+	end
+end
+
+local function runExternalScript(scriptPath, inetStat)
+	if inetStat == nil then
+		inetStat = ""
+	end
+
+	if nixio.fs.access(scriptPath, "x") then
+		local fh = io.popen(string.format('/bin/sh -c "%s %s" &', scriptPath, inetStat), "r")
+		fh:close()
+	end
+end
+
+local function parseHost(host)
+	local port
+	local addr = host:match("^[^:]+")
+	if host:find(":") then
+		port = host:match("[^:]+$")
+	end
+	return addr, port
+end
+
+local function parseHosts()
+	Config.parsedHosts = {}
+	for k, v in ipairs(Config.hosts) do
+		local addr, port = parseHost(v)
+		Config.parsedHosts[k] = {[1] = addr, [2] = (tonumber(port) or false)}
+	end
+end
+
+local function pingHost(host)
+	return os.execute(string.format("%s %s -W %d %s > /dev/null 2>&1",
+		Config.pingCmd, Config.pingParams, Config.connectionTimeout, host))
+end
+
+local function tcpConnectToHost(host, port)
+	local retCode = 1
+	local addrInfo = nixio.getaddrinfo(host, "any")
+	if addrInfo then
+		local family = addrInfo[1].family
+		if family then
+			local socket = nixio.socket(family, "stream")
+			socket:setopt("socket", "sndtimeo", Config.connectionTimeout)
+			socket:setopt("socket", "rcvtimeo", Config.connectionTimeout)
+			local success = socket:connect(host, port or Config.tcpPort)
+			socket:close()
+			retCode = success and 0 or 1
+		end
+	end
+	return retCode
+end
+
+local function checkHosts()
+	local checkFunc = (Config.checkType == 1) and tcpConnectToHost or pingHost
+	local retCode = 1
+	for k, v in ipairs(Config.parsedHosts) do
+		for i = 1, Config.connectionAttempts do
+			if checkFunc(v[1], v[2]) == 0 then
+				retCode = 0
+				break
+			end
+		end
+		if retCode == 0 then
+			break
+		end
+	end
+	return retCode
+end
+
+local function main()
+	local last_status
+	local current_status
+	local interval = Config.intervalUp
+
+	while true do
+		current_status = checkHosts()
+		if not nixio.fs.access(Config.statusFile, "r") then
+			writeValueToFile(Config.statusFile, current_status)
+		end
+
+		if current_status == 0 then
+			interval = Config.intervalUp
+			if last_status ~= nil and current_status ~= last_status then
+				writeValueToFile(Config.statusFile, current_status)
+				writeLogMessage("internet connected")
+				if Config.enableUpScript == "1" then
+					runExternalScript(Config.upScript)
+				end
+			end
+		else
+			interval = Config.intervalDown
+			if last_status ~= nil and current_status ~= last_status then
+				writeValueToFile(Config.statusFile, current_status)
+				writeLogMessage("internet disconnected")
+				if Config.enableDownScript == "1" then
+					runExternalScript(Config.downScript)
+				end
+			end
+		end
+
+		if Config.enableRunScript == "1" then
+			runExternalScript(Config.runScript, current_status)
+		end
+
+		last_status = current_status
+		nixio.nanosleep(interval)
+	end
+end
+
+local function removeProcessFiles()
+	os.remove(Config.pidFile)
+	os.remove(Config.statusFile)
+end
+
+local function status()
+	if nixio.fs.access(Config.pidFile, "r") then
+		return "running"
+	else
+		return "stoped"
+	end
+end
+
+local function poll(attempts, timeout)
+	if Config.mode == "1" then
+		Config.connectionAttempts = Config.UIConnectionAttempts
+		Config.connectionTimeout  = Config.UIConnectionTimeout
+	end
+	if attempts then
+		Config.connectionAttempts = attempts
+	end
+	if timeout then
+		Config.connectionTimeout = timeout
+	end
+	if checkHosts() == 0 then
+		return "up"
+	else
+		return "down"
+	end
+end
+
+local function inetStatus()
+	local inetStat = "down"
+	if nixio.fs.access(Config.statusFile, "r") then
+		local inetStatVal = readValueFromFile(Config.statusFile)
+		if inetStatVal ~= nil and tonumber(inetStatVal) == 0 then
+			inetStat = "up"
+		end
+	elseif Config.mode == "1" then
+		inetStat = poll()
+	else
+		os.exit(126)
+	end
+	return inetStat
+end
+
+local function stop()
+	local pidValue
+	if nixio.fs.access(Config.pidFile, "r") then
+		pidValue = readValueFromFile(Config.pidFile)
+		if pidValue then
+			local success
+			for i = 0, 10 do
+				success = nixio.kill(tonumber(pidValue), 15)
+				if success then
+					break
+				end
+			end
+			if not success then
+				io.stderr:write(string.format('No such process: "%s"\n', pidValue))
+			end
+			writeLogMessage('stoped')
+			removeProcessFiles()
+		end
+	end
+
+	if not pidValue then
+		io.stderr:write(
+			string.format('PID file "%s" does not exist. %s not running?\n',
+				Config.pidFile, Config.appName))
+	end
+end
+
+local function preRun()
+	-- Exit if internet detector mode != 2(Service)
+	if Config.mode ~= "2" then
+		io.stderr:write(string.format('Start failed, mode != "2"\n', Config.appName))
+		os.exit(0)
+	end
+	if nixio.fs.access(Config.pidFile, "r") then
+		io.stderr:write(
+			string.format('PID file "%s" already exist. %s already running?\n',
+				Config.pidFile, Config.appName))
+		return false
+	end
+	return true
+end
+
+local function run()
+	local pidValue = nixio.getpid()
+	writeValueToFile(Config.pidFile, pidValue)
+	writeLogMessage('started')
+	main()
+end
+
+local function noDaemon()
+	if not preRun() then
+		return
+	end
+	run()
+end
+
+local function daemon()
+	if not preRun() then
+		return
+	end
+	-- UNIX double fork
+	if nixio.fork() == 0 then
+		nixio.setsid()
+		if nixio.fork() == 0 then
+			nixio.chdir("/")
+			nixio.umask(0)
+			local devnull = "/dev/null"
+			io.stdout:flush()
+			io.stderr:flush()
+			nixio.dup(io.open(devnull, "r"), io.stdin)
+			nixio.dup(io.open(devnull, "a+"), io.stdout)
+			nixio.dup(io.open(devnull, "a+"), io.stderr)
+			run()
+		end
+		os.exit(0)
+	end
+	os.exit(0)
+end
+
+local function restart()
+	stop()
+	daemon()
+end
+
+-- Main section
+
+parseHosts()
+
+local function help()
+	return string.format("Usage: %s [start|no-daemon|stop|restart|status|inet-status|poll [<attempts num>] [<timeout sec>]|--help]", arg[0])
+end
+
+local helpArgs = {["-h"] = true, ["--help"] = true, ["help"] = true}
+if arg[1] == "start" or #arg == 0 then
+	daemon()
+elseif arg[1] == "no-daemon" then
+	noDaemon()
+elseif arg[1] == "stop" then
+	stop()
+elseif arg[1] == "restart" then
+	restart()
+elseif arg[1] == "status" then
+	print(status())
+elseif arg[1] == "inet-status" then
+	print(inetStatus())
+elseif arg[1] == "poll" then
+	local attempts, timeout
+	if arg[2] and arg[2]:match("[0-9]+") then
+		attempts = tonumber(arg[2])
+		if arg[3] and arg[3]:match("[0-9]+") then
+			timeout = tonumber(arg[3])
+		end
+	end
+	print(poll(attempts, timeout))
+elseif helpArgs[arg[1]] then
+	print(help())
+else
+	print(help())
+	os.exit(1)
+end
+
+os.exit(0)

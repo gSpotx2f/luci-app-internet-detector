@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=01
+
+ID="/usr/bin/internet-detector"
+
+start() {
+	$ID
+}
+
+stop() {
+	$ID stop
+}
+
+restart() {
+	stop
+	start
+}
