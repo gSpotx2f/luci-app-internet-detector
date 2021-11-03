@@ -11,7 +11,6 @@ const btnStyleApply    = 'btn cbi-button-apply';
 
 return L.view.extend({
 	execPath            : '/usr/bin/internet-detector',
-	initPath            : '/etc/init.d/internet-detector',
 	upScriptPath        : '/etc/internet-detector/up-script',
 	downScriptPath      : '/etc/internet-detector/down-script',
 	runScriptPath       : '/etc/internet-detector/run-script',
@@ -30,6 +29,26 @@ return L.view.extend({
 	uiCheckIntervalDown : null,
 	currentAppMode      : '0',
 
+	callInitStatus: rpc.declare({
+		object: 'luci',
+		method: 'getInitList',
+		params: [ 'name' ],
+		expect: { '': {} }
+	}),
+
+	getInitStatus: function() {
+		return this.callInitStatus('internet-detector').then(res => {
+			if(res) {
+				return res['internet-detector'].enabled;
+			} else {
+				throw _('Command failed');
+			}
+		}).catch(e => {
+			ui.addNotification(null,
+				E('p', _('Failed to get %s init status: %s').format('internet-detector', e)));
+		});
+	},
+
 	callInitAction: rpc.declare({
 		object: 'luci',
 		method: 'setInitAction',
@@ -45,7 +64,7 @@ return L.view.extend({
 			return true;
 		}).catch(e => {
 			ui.addNotification(null,
-				E('p', _('Failed to execute "%s %s": %s').format(this.initPath, action, e)));
+				E('p', _('Service action failed "%s %s": %s').format('internet-detector', action, e)));
 		});
 	},
 
@@ -191,27 +210,27 @@ return L.view.extend({
 				'click': ui.createHandlerFn(this.ctx, this.ctx.serviceRestart),
 			}, _('Restart'));
 			this.ctx.initButton = E('button', {
-				'class': (this.ctx.initStatus === 1) ? btnStyleDisabled : btnStyleEnabled,
+				'class': (!this.ctx.initStatus) ? btnStyleDisabled : btnStyleEnabled,
 				'click': ui.createHandlerFn(this, () => {
 					return this.ctx.handleServiceAction(
-						(this.ctx.initStatus === 1) ? 'enable' : 'disable'
+						(!this.ctx.initStatus) ? 'enable' : 'disable'
 					).then(success => {
 						if(!success) {
 							return;
 						};
-						if(this.ctx.initStatus === 1) {
+						if(!this.ctx.initStatus) {
 							this.ctx.initButton.textContent = _('Enabled');
 							this.ctx.initButton.className = btnStyleEnabled;
-							this.ctx.initStatus = 0;
+							this.ctx.initStatus = true;
 						}
 						else {
 							this.ctx.initButton.textContent = _('Disabled');
 							this.ctx.initButton.className = btnStyleDisabled;
-							this.ctx.initStatus = 1;
+							this.ctx.initStatus = false;
 						};
 					});
 				}),
-			}, (this.ctx.initStatus == 1) ? _('Disabled') : _('Enabled'));
+			}, (!this.ctx.initStatus) ? _('Disabled') : _('Enabled'));
 
 			this.ctx.setInternetStatus(true);
 
@@ -316,7 +335,7 @@ return L.view.extend({
 	load: function() {
 		return Promise.all([
 			fs.exec(this.execPath, [ 'status' ]),
-			fs.exec(this.initPath, [ 'enabled' ]),
+			this.getInitStatus(),
 			uci.load('internet-detector'),
 		]).catch(e => {
 			ui.addNotification(null, E('p', _('An error has occurred') + ': %s'.format(e.message)));
@@ -328,7 +347,7 @@ return L.view.extend({
 			return;
 		};
 		this.appStatus           = (data[0].code === 0) ? data[0].stdout.trim() : null;
-		this.initStatus          = data[1].code;
+		this.initStatus          = data[1];
 		this.currentAppMode      = uci.get('internet-detector', 'config', 'mode');
 		this.uiCheckIntervalUp   = Number(uci.get('internet-detector', 'config', 'ui_interval_up'));
 		this.uiCheckIntervalDown = Number(uci.get('internet-detector', 'config', 'ui_interval_down'));

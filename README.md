@@ -11,16 +11,16 @@ Dependences: lua, luci-lib-nixio, libuci-lua
     opkg install /tmp/internet-detector_0.3.0-1_all.ipk
     rm /tmp/internet-detector_0.3.0-1_all.ipk
 
-    wget --no-check-certificate -O /tmp/luci-app-internet-detector_0.3.0-1_all.ipk https://github.com/gSpotx2f/luci-app-internet-detector/raw/master/packages/19.07/luci-app-internet-detector_0.3.0-1_all.ipk
-    opkg install /tmp/luci-app-internet-detector_0.3.0-1_all.ipk
-    rm /tmp/luci-app-internet-detector_0.3.0-1_all.ipk
+    wget --no-check-certificate -O /tmp/luci-app-internet-detector_0.3.0-2_all.ipk https://github.com/gSpotx2f/luci-app-internet-detector/raw/master/packages/19.07/luci-app-internet-detector_0.3.0-2_all.ipk
+    opkg install /tmp/luci-app-internet-detector_0.3.0-2_all.ipk
+    rm /tmp/luci-app-internet-detector_0.3.0-2_all.ipk
     /etc/init.d/rpcd reload
 
 **i18n-ru:**
 
-    wget --no-check-certificate -O /tmp/luci-i18n-internet-detector-ru_0.3.0-1_all.ipk https://github.com/gSpotx2f/luci-app-internet-detector/raw/master/packages/19.07/luci-i18n-internet-detector-ru_0.3.0-1_all.ipk
-    opkg install /tmp/luci-i18n-internet-detector-ru_0.3.0-1_all.ipk
-    rm /tmp/luci-i18n-internet-detector-ru_0.3.0-1_all.ipk
+    wget --no-check-certificate -O /tmp/luci-i18n-internet-detector-ru_0.3.0-2_all.ipk https://github.com/gSpotx2f/luci-app-internet-detector/raw/master/packages/19.07/luci-i18n-internet-detector-ru_0.3.0-2_all.ipk
+    opkg install /tmp/luci-i18n-internet-detector-ru_0.3.0-2_all.ipk
+    rm /tmp/luci-i18n-internet-detector-ru_0.3.0-2_all.ipk
 
 **Script for LED control:**
 

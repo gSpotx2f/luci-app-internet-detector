@@ -6,12 +6,11 @@
 				"/etc/internet-detector/up-script": [ "read" ],
 				"/etc/internet-detector/down-script": [ "read" ],
 				"/etc/internet-detector/run-script": [ "read" ],
-				"/etc/init.d/internet-detector": [ "exec" ],
 				"/usr/bin/internet-detector*": [ "exec" ]
 			},
 			"uci": [ "internet-detector" ],
 			"ubus": {
-				"luci": [ "setInitAction" ]
+				"luci": [ "getInitList", "setInitAction" ]
 			}
 		},
 		"write": {

@@ -82,7 +82,7 @@ msgstr ""
 msgid "Execute commands when the Internet is disconnected"
 msgstr ""
 
-msgid "Failed to execute \"%s %s\": %s"
+msgid "Failed to get %s init status: %s"
 msgstr ""
 
 msgid "Host availability check type"
@@ -140,6 +140,9 @@ msgid "Running"
 msgstr ""
 
 msgid "Service"
+msgstr ""
+
+msgid "Service action failed \"%s %s\": %s"
 msgstr ""
 
 msgid "Service configuration"
