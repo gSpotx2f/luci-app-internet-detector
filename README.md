@@ -10,6 +10,8 @@ Dependences: lua, luci-lib-nixio, libuci-lua
     wget --no-check-certificate -O /tmp/internet-detector_0.3.0-1_all.ipk https://github.com/gSpotx2f/luci-app-internet-detector/raw/master/packages/19.07/internet-detector_0.3.0-1_all.ipk
     opkg install /tmp/internet-detector_0.3.0-1_all.ipk
     rm /tmp/internet-detector_0.3.0-1_all.ipk
+    /etc/init.d/internet-detector start
+    /etc/init.d/internet-detector enable
 
     wget --no-check-certificate -O /tmp/luci-app-internet-detector_0.3.0-2_all.ipk https://github.com/gSpotx2f/luci-app-internet-detector/raw/master/packages/19.07/luci-app-internet-detector_0.3.0-2_all.ipk
     opkg install /tmp/luci-app-internet-detector_0.3.0-2_all.ipk
