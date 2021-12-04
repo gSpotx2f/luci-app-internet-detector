@@ -333,6 +333,13 @@ return L.view.extend({
 	},
 
 	load: function() {
+		
+		return fs.list('/sys/class/leds').then(function(data) {
+			return data.filter(function(dev) {
+				return dev.name;
+			});
+		});
+		
 		return Promise.all([
 			fs.exec(this.execPath, [ 'status' ]),
 			this.getInitStatus(),
@@ -382,6 +389,14 @@ return L.view.extend({
 		// service section
 		o = s.taboption('main_settings', this.CBIBlockService, '_dummy_service');
 		o.ctx = this;
+		
+		// led
+		o = s.taboption('main_settings', form.Value, 'status_led', 
+			_('Status LED'), 
+			_("Select the LED showing the internet connection status."));
+		data.forEach(function(dev) {
+			o.value(dev.name);
+		});
 
 		// mode
 		o = s.taboption('main_settings', form.ListValue,
