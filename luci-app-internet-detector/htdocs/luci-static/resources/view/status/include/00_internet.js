@@ -1,8 +1,9 @@
 'use strict';
+'require baseclass';
 'require fs';
 'require uci';
 
-return L.Class.extend({
+return baseclass.extend({
 	title      : _('Internet'),
 	execPath   : '/usr/bin/internet-detector',
 	inetStatus : null,
@@ -36,7 +37,6 @@ return L.Class.extend({
 			};
 
 			window.internetDetectorCounter = 0;
-
 			return L.resolveDefault(fs.exec(this.execPath, [ 'inet-status' ]), null);
 		}
 		else {

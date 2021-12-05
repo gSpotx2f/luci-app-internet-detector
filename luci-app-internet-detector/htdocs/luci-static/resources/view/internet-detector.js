@@ -1,15 +1,18 @@
 'use strict';
+'require baseclass';
 'require form';
 'require fs';
+'require poll';
 'require rpc';
 'require uci';
 'require ui';
+'require view';
 
 const btnStyleEnabled  = 'btn cbi-button-save';
 const btnStyleDisabled = 'btn cbi-button-reset';
 const btnStyleApply    = 'btn cbi-button-apply';
 
-return L.view.extend({
+return view.extend({
 	execPath            : '/usr/bin/internet-detector',
 	upScriptPath        : '/etc/internet-detector/up-script',
 	downScriptPath      : '/etc/internet-detector/down-script',
@@ -69,14 +72,14 @@ return L.view.extend({
 	},
 
 	serviceRestart: function(ev) {
-		L.Poll.stop();
+		poll.stop();
 		return this.handleServiceAction('restart').then(() => {
 			this.servicePoll();
-			L.Poll.start();
+			poll.start();
 		});
 	},
 
-	fileEditDialog: L.Class.extend({
+	fileEditDialog: baseclass.extend({
 		__init__: function(file, title, description, callback, fileExists=false) {
 			this.file        = file;
 			this.title       = title;
@@ -553,7 +556,7 @@ return L.view.extend({
 		o.value(10, "10 " + _('sec'));
 
 		if(this.currentAppMode !== '0') {
-			L.Poll.add(
+			poll.add(
 				L.bind((this.currentAppMode === '2') ? this.servicePoll : this.uiPoll, this),
 				this.pollInterval
 			);
