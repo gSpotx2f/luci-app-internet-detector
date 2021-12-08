@@ -17,6 +17,7 @@ return view.extend({
 	upScriptPath        : '/etc/internet-detector/up-script',
 	downScriptPath      : '/etc/internet-detector/down-script',
 	runScriptPath       : '/etc/internet-detector/run-script',
+	ledsPath            : '/sys/class/leds',
 	pollInterval        : L.env.pollinterval,
 	appStatus           : 'stoped',
 	initStatus          : null,
@@ -31,6 +32,7 @@ return view.extend({
 	uiCheckIntervalUp   : null,
 	uiCheckIntervalDown : null,
 	currentAppMode      : '0',
+	leds                : null,
 
 	callInitStatus: rpc.declare({
 		object: 'luci',
@@ -202,6 +204,20 @@ return view.extend({
 		};
 	},
 
+	CBIBlockTitle: form.DummyValue.extend({
+		string: null,
+
+		renderWidget: function(section_id, option_index, cfgvalue) {
+			this.title = this.description = null;
+			return E([
+				E('label', { 'class': 'cbi-value-title' }),
+				E('div', { 'class': 'cbi-value-field' },
+					E('b', {}, this.string)
+				),
+			]);
+		},
+	}),
+
 	CBIBlockService: form.DummyValue.extend({
 		ctx: null,
 
@@ -339,6 +355,7 @@ return view.extend({
 		return Promise.all([
 			fs.exec(this.execPath, [ 'status' ]),
 			this.getInitStatus(),
+			fs.list(this.ledsPath),
 			uci.load('internet-detector'),
 		]).catch(e => {
 			ui.addNotification(null, E('p', _('An error has occurred') + ': %s'.format(e.message)));
@@ -351,9 +368,10 @@ return view.extend({
 		};
 		this.appStatus           = (data[0].code === 0) ? data[0].stdout.trim() : null;
 		this.initStatus          = data[1];
+		this.leds                = data[2];
 		this.currentAppMode      = uci.get('internet-detector', 'config', 'mode');
-		this.uiCheckIntervalUp   = Number(uci.get('internet-detector', 'config', 'ui_interval_up'));
-		this.uiCheckIntervalDown = Number(uci.get('internet-detector', 'config', 'ui_interval_down'));
+		this.uiCheckIntervalUp   = Number(uci.get('internet-detector', 'ui_config', 'interval_up'));
+		this.uiCheckIntervalDown = Number(uci.get('internet-detector', 'ui_config', 'interval_down'));
 
 		let upScriptEditDialog = new this.fileEditDialog(
 			this.upScriptPath,
@@ -371,54 +389,57 @@ return view.extend({
 			_("Shell commands that are executed every time the Internet is checked for availability"),
 		);
 
-		let m, s, o;
 
-		m = new form.Map('internet-detector', _('Internet detector'),
-			_('Checking Internet availability.'));
+		/* UCI sections	*/
 
-		s = m.section(form.NamedSection, 'config');
-		s.anonymous = true;
-		s.addremove = false;
+		let s, o;
 
-		s.tab('main_settings', _('Main settings'));
+		//// Main configuration
 
-		// service section
-		o = s.taboption('main_settings', this.CBIBlockService, '_dummy_service');
+		let mMain = new form.Map('internet-detector');
+		s         = mMain.section(form.NamedSection, 'config');
+
+		// service widget
+		o     = s.option(this.CBIBlockService, '_dummy_service');
 		o.ctx = this;
 
 		// mode
-		o = s.taboption('main_settings', form.ListValue,
+		o = s.option(form.ListValue,
 			'mode', _('Internet detector mode'));
 		o.value('0', _('Disabled'));
 		o.value('1', _('Web UI only'));
 		o.value('2', _('Service'));
-		o.description = '%s;<br>%s;<br>%s;'.format(
+		o.description = '%s;<br />%s;<br />%s;'.format(
 			_('Disabled: detector is completely off'),
 			_('Web UI only: detector works only when the Web UI is open (UI detector)'),
 			_('Service: detector always runs as a system service')
 		);
 
 		// hosts
-		o = s.taboption('main_settings', form.DynamicList,
+		o = s.option(form.DynamicList,
 			'hosts', _('Hosts'));
 		o.description = _('Hosts to check Internet availability. Hosts are polled (in list order) until at least one of them responds');
-		o.datatype = 'or(host,hostport)';
+		o.datatype    = 'or(host,hostport)';
 
 		// check_type
-		o = s.taboption('main_settings', form.ListValue,
+		o = s.option(form.ListValue,
 			'check_type', _('Check type'));
 		o.description = _('Host availability check type');
-		o.value(0, _('Ping host'));
-		o.value(1, _('TCP port connection'));
+		o.value(0, _('TCP port connection'));
+		o.value(1, _('Ping host'));
 
 		// tcp_port
-		o = s.taboption('main_settings', form.Value,
+		o = s.option(form.Value,
 			'tcp_port', _('TCP port'));
 		o.description = _('Default port value for TCP connections');
-		o.rmempty = false;
-		o.datatype = "port";
+		o.rmempty     = false;
+		o.datatype    = "port";
 
-		s.tab('ui_detector_configuration', _('UI detector configuration'));
+
+		//// UI detector configuration
+
+		let mUi = new form.Map('internet-detector');
+		s       = mUi.section(form.NamedSection, 'ui_config');
 
 		let makeUIIntervalOptions = L.bind(function(list) {
 			list.value(1, '%d %s'.format(this.pollInterval, _('sec')));
@@ -429,80 +450,39 @@ return view.extend({
 			list.value(6, '%d %s'.format(this.pollInterval * 6, _('sec')));
 		}, this);
 
-		// ui_interval_up
-		o = s.taboption('ui_detector_configuration', form.ListValue,
-			'ui_interval_up', _('Alive interval'));
+		// interval_up
+		o = s.option(form.ListValue,
+			'interval_up', _('Alive interval'));
 		o.description = _('Hosts polling interval when the Internet is up');
 		makeUIIntervalOptions(o);
 
-		// ui_interval_down
-		o = s.taboption('ui_detector_configuration', form.ListValue,
-			'ui_interval_down', _('Dead interval'));
+		// interval_down
+		o = s.option(form.ListValue,
+			'interval_down', _('Dead interval'));
 		o.description = _('Hosts polling interval when the Internet is down');
 		makeUIIntervalOptions(o);
 
-		// ui_connection_attempts
-		o = s.taboption('ui_detector_configuration', form.ListValue,
-			'ui_connection_attempts', _('Connection attempts'));
+		// connection_attempts
+		o = s.option(form.ListValue,
+			'connection_attempts', _('Connection attempts'));
 		o.description = _('Maximum number of attempts to connect to each host');
 		o.value(1);
 		o.value(2);
 		o.value(3);
 
-		// ui_connection_timeout
-		o = s.taboption('ui_detector_configuration', form.ListValue,
-			'ui_connection_timeout', _('Connection timeout'));
+		// connection_timeout
+		o = s.option(form.ListValue,
+			'connection_timeout', _('Connection timeout'));
 		o.description = _('Maximum timeout for waiting for a response from the host');
 		o.value(1, "1 " + _('sec'));
 		o.value(2, "2 " + _('sec'));
 		o.value(3, "3 " + _('sec'));
 
-		s.tab('service_configuration', _('Service configuration'));
 
-		// enable_logger
-		o = s.taboption('service_configuration', form.Flag,
-			'enable_logger', _('Enable logging'));
-		o.description = _('Write messages to the system log');
-		o.rmempty = false;
+		//// Service configuration
 
-		// enable_up_script
-		o = s.taboption('service_configuration', form.Flag,
-			'enable_up_script', _('Enable up-script'));
-		o.description = _('Execute commands when the Internet is connected');
-		o.rmempty = false;
-
-		// up_script edit dialog
-		o = s.taboption('service_configuration', form.Button,
-			'_up_script_btn', _('Edit up-script'));
-		o.onclick = () => upScriptEditDialog.show();
-		o.inputtitle = _('Edit');
-		o.inputstyle = 'edit btn';
-
-		// enable_down_script
-		o = s.taboption('service_configuration', form.Flag,
-			'enable_down_script', _('Enable down-script'));
-		o.description = _('Execute commands when the Internet is disconnected');
-		o.rmempty = false;
-
-		// down_script edit dialog
-		o = s.taboption('service_configuration', form.Button,
-			'_down_script_btn', _('Edit down-script'));
-		o.onclick = () => downScriptEditDialog.show();
-		o.inputtitle = _('Edit');
-		o.inputstyle = 'edit btn';
-
-		// enable_run_script
-		o = s.taboption('service_configuration', form.Flag,
-			'enable_run_script', _('Enable run-script'));
-		o.description = _('Execute commands every time the Internet is checked for availability');
-		o.rmempty = false;
-
-		// run_script edit dialog
-		o = s.taboption('service_configuration', form.Button,
-			'_run_script_btn', _('Edit run-script'));
-		o.onclick = () => runScriptEditDialog.show();
-		o.inputtitle = _('Edit');
-		o.inputstyle = 'edit btn';
+		let mService = new form.Map('internet-detector');
+		s            = mService.section(form.NamedSection, 'service_config');
 
 		function makeIntervalOptions(list) {
 			list.value(2,   '2 '  + _('sec'));
@@ -519,19 +499,19 @@ return view.extend({
 		}
 
 		// interval_up
-		o = s.taboption('service_configuration', form.ListValue,
+		o = s.option(form.ListValue,
 			'interval_up', _('Alive interval'));
 		o.description = _('Hosts polling interval when the Internet is up');
 		makeIntervalOptions(o);
 
 		// interval_down
-		o = s.taboption('service_configuration', form.ListValue,
+		o = s.option(form.ListValue,
 			'interval_down', _('Dead interval'));
 		o.description = _('Hosts polling interval when the Internet is down');
 		makeIntervalOptions(o);
 
 		// connection_attempts
-		o = s.taboption('service_configuration', form.ListValue,
+		o = s.option(form.ListValue,
 			'connection_attempts', _('Connection attempts'));
 		o.description = _('Maximum number of attempts to connect to each host');
 		o.value(1);
@@ -541,7 +521,7 @@ return view.extend({
 		o.value(5);
 
 		// connection_timeout
-		o = s.taboption('service_configuration', form.ListValue,
+		o = s.option( form.ListValue,
 			'connection_timeout', _('Connection timeout'));
 		o.description = _('Maximum timeout for waiting for a response from the host');
 		o.value(1, "1 " + _('sec'));
@@ -555,20 +535,153 @@ return view.extend({
 		o.value(9, "9 " + _('sec'));
 		o.value(10, "10 " + _('sec'));
 
-		if(this.currentAppMode !== '0') {
-			poll.add(
-				L.bind((this.currentAppMode === '2') ? this.servicePoll : this.uiPoll, this),
-				this.pollInterval
-			);
+		// enable_logger
+		o = s.option(form.Flag,
+			'enable_logger', _('Enable logging'));
+		o.description = _('Write messages to the system log');
+		o.rmempty     = false;
+
+		// enable_up_script
+		o = s.option(form.Flag,
+			'enable_up_script', _('Enable up-script'));
+		o.description = _('Execute commands when the Internet is connected');
+		o.rmempty     = false;
+
+		// up_script edit dialog
+		o = s.option(form.Button,
+			'_up_script_btn', _('Edit up-script'));
+		o.onclick    = () => upScriptEditDialog.show();
+		o.inputtitle = _('Edit');
+		o.inputstyle = 'edit btn';
+
+		// enable_down_script
+		o = s.option(form.Flag,
+			'enable_down_script', _('Enable down-script'));
+		o.description = _('Execute commands when the Internet is disconnected');
+		o.rmempty     = false;
+
+		// down_script edit dialog
+		o = s.option(form.Button,
+			'_down_script_btn', _('Edit down-script'));
+		o.onclick    = () => downScriptEditDialog.show();
+		o.inputtitle = _('Edit');
+		o.inputstyle = 'edit btn';
+
+		// enable_run_script
+		o = s.option(form.Flag,
+			'enable_run_script', _('Enable run-script'));
+		o.description = _('Execute commands every time the Internet is checked for availability');
+		o.rmempty     = false;
+
+		// run_script edit dialog
+		o = s.option(form.Button,
+			'_run_script_btn', _('Edit run-script'));
+		o.onclick    = () => runScriptEditDialog.show();
+		o.inputtitle = _('Edit');
+		o.inputstyle = 'edit btn';
+
+
+		/* Modules */
+
+		//// LED control
+
+		let mLed = new form.Map('internet-detector');
+		s        = mLed.section(form.NamedSection, 'mod_led_control');
+
+		o        = s.option(this.CBIBlockTitle, '_dummy');
+		o.string = _('<abbr title="Light Emitting Diode">LED</abbr> control') + ':';
+
+		if(this.leds && this.leds.length > 0) {
+
+			// enabled
+			o = s.option(form.Flag, 'enabled',
+				_('Enable <abbr title="Light Emitting Diode">LED</abbr> control'));
+			o.rmempty     = false;
+			o.description = _('<abbr title="Light Emitting Diode">LED</abbr> is on when Internet is available.');
+
+			// led_name
+			o = s.option(form.ListValue, 'led_name',
+				_('<abbr title="Light Emitting Diode">LED</abbr> Name'));
+			o.depends('enabled', '1');
+			this.leds.sort((a, b) => a.name > b.name);
+			this.leds.forEach(e => o.value(e.name));
+		} else {
+			o         = s.option(form.DummyValue, '_dummy');
+			o.rawhtml = true;
+			o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
+				_('No <abbr title="Light Emitting Diode">LED</abbr>s available...') +
+				'</em></div>';
 		};
 
-		let mapPromise = m.render();
-		mapPromise.then(node => node.classList.add('fade-in'));
-		return mapPromise;
+
+		/* Rendering */
+
+		let settingsNode = E('div', { 'class': 'cbi-section fade-in' },
+			E('div', { 'class': 'cbi-section-node' },
+				E('div', { 'class': 'cbi-value' },
+					E('em', { 'class': 'spinning' }, _('Collecting data...'))
+				)
+			)
+		);
+
+		let promises = [ mMain.render(), mUi.render(), mService.render() ];
+		if(mLed) {
+			promises.push(mLed.render());
+		};
+
+		Promise.all(promises).then(maps => {
+			let settingsTabs  = E('div', { 'class': 'cbi-section fade-in' });
+			let tabsContainer = E('div', { 'class': 'cbi-section-node cbi-section-node-tabbed' });
+			settingsTabs.append(tabsContainer);
+
+			// Main settings tab
+			let mainTab  = E('div', {
+				'data-tab'      : 0,
+				'data-tab-title': _('Main settings'),
+			}, maps[0]);
+			tabsContainer.append(mainTab);
+
+			// UI detector configuration tab
+			let uiTab = E('div', {
+				'data-tab'      : 1,
+				'data-tab-title': _('UI detector configuration'),
+			}, maps[1]);
+			tabsContainer.append(uiTab);
+
+			// Service configuration tab
+			let serviceTab = E('div', {
+				'data-tab'      : 2,
+				'data-tab-title': _('Service configuration'),
+			}, maps[2]);
+
+			// LED control
+			if(maps[3]) {
+				serviceTab.append(maps[3]);
+			};
+
+			tabsContainer.append(serviceTab);
+
+			ui.tabs.initTabGroup(tabsContainer.children);
+			settingsNode.replaceWith(settingsTabs);
+
+			if(this.currentAppMode !== '0') {
+				poll.add(
+					L.bind((this.currentAppMode === '2') ? this.servicePoll : this.uiPoll, this),
+					this.pollInterval
+				);
+			};
+		}).catch(e => ui.addNotification(null, E('p', {}, e.message)));
+
+		return E([
+			E('h2', { 'class': 'fade-in' }, _('Internet detector')),
+			E('div', { 'class': 'cbi-section-descr fade-in' },
+				_('Checking Internet availability.')),
+			settingsNode,
+		]);
 	},
 
 	handleSaveApply: function(ev, mode) {
- 	   return this.handleSave(ev).then(() => {
+		return this.handleSave(ev).then(() => {
 			ui.changes.apply(mode == '0');
 			window.setTimeout(() => this.serviceRestart(), 3000);
 		});

@@ -24,11 +24,17 @@ msgstr "Тип проверки"
 msgid "Checking Internet availability."
 msgstr "Проверка доступности Интернет."
 
+msgid "Collecting data..."
+msgstr "Сбор данных..."
+
 msgid "Command failed"
 msgstr "Команда не выполнена"
 
 msgid "Connected"
 msgstr "Подключен"
+
+msgid "Connection attempts"
+msgstr "Попытки подключения"
 
 msgid "Connection timeout"
 msgstr "Таймаут соединения"
@@ -55,7 +61,7 @@ msgid "Disconnected"
 msgstr "Отключен"
 
 msgid "Dismiss"
-msgstr "Отмена"
+msgstr "Закрыть"
 
 msgid "Edit"
 msgstr "Изменить"
@@ -73,7 +79,7 @@ msgid "Enable down-script"
 msgstr "Включить down-script"
 
 msgid "Enable logging"
-msgstr "Включить логирование"
+msgstr "Включить запись событий в лог"
 
 msgid "Enable run-script"
 msgstr "Включить run-script"
@@ -218,3 +224,18 @@ msgstr "сек"
 
 msgid "up-script"
 msgstr ""
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
+msgstr "Управление <abbr title=\"Светодиод\">LED</abbr>"
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> is on when Internet is available."
+msgstr "<abbr title=\"Светодиод\">LED</abbr> включен если Интернет доступен."
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> Name"
+msgstr "Имя <abbr title=\"Светодиод\">LED</abbr>"
+
+msgid "Enable <abbr title=\"Light Emitting Diode\">LED</abbr> control"
+msgstr "Включить управление <abbr title=\"Светодиод\">LED</abbr>"
+
+msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
+msgstr "Нет доступных <abbr title=\"Светодиод\">LED</abbr>..."

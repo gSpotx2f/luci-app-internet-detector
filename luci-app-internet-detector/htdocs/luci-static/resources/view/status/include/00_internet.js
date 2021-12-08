@@ -15,8 +15,8 @@ return baseclass.extend({
 			'currentAppMode' in window
 		)) {
 			await uci.load('internet-detector').then(data => {
-				window.uiCheckIntervalUp   = Number(uci.get('internet-detector', 'config', 'ui_interval_up'));
-				window.uiCheckIntervalDown = Number(uci.get('internet-detector', 'config', 'ui_interval_down'));
+				window.uiCheckIntervalUp   = Number(uci.get('internet-detector', 'ui_config', 'interval_up'));
+				window.uiCheckIntervalDown = Number(uci.get('internet-detector', 'ui_config', 'interval_down'));
 				window.currentAppMode      = uci.get('internet-detector', 'config', 'mode');
 			}).catch(e => {});
 		};

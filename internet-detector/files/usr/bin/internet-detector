@@ -35,11 +35,13 @@ local Config = {
 	["connectionTimeout"]    = 3,
 	["UIConnectionTimeout"]  = 1,
 	["tcpPort"]              = 53,
-	["checkType"]            = 0,    -- 0: ping, 1: TCP
+	["checkType"]            = 0,	-- 0: TCP, 1: ping
 	["loggerLevel"]          = "info",
 	--["loggerCmd"]          = "logger",
+	["modules"]              = {},
 }
 Config.configDir  = "/etc/" .. Config.appName
+Config.modulesDir = "/usr/lib/" .. Config.appName
 Config.upScript   = Config.configDir .. "/" .. "up-script"
 Config.downScript = Config.configDir .. "/" .. "down-script"
 Config.runScript  = Config.configDir .. "/" .. "run-script"
@@ -59,29 +61,27 @@ if not nixio then
 end
 
 local uci = prequire("uci")
-if uci then
-
-	-- Load settings from UCI
-
-	local cursor                = uci.cursor()
-	Config.mode                 = cursor:get(Config.appName, "config", "mode")
-	Config.enableLogger         = cursor:get(Config.appName, "config", "enable_logger")
-	Config.enableUpScript       = cursor:get(Config.appName, "config", "enable_up_script")
-	Config.enableDownScript     = cursor:get(Config.appName, "config", "enable_down_script")
-	Config.enableRunScript      = cursor:get(Config.appName, "config", "enable_run_script")
-	Config.intervalUp           = tonumber(cursor:get(Config.appName, "config", "interval_up"))
-	Config.intervalDown         = tonumber(cursor:get(Config.appName, "config", "interval_down"))
-	Config.hosts                = cursor:get(Config.appName, "config", "hosts")
-	Config.checkType            = tonumber(cursor:get(Config.appName, "config", "check_type"))
-	Config.connectionAttempts   = tonumber(cursor:get(Config.appName, "config", "connection_attempts"))
-	Config.connectionTimeout    = tonumber(cursor:get(Config.appName, "config", "connection_timeout"))
-	Config.UIConnectionAttempts = tonumber(cursor:get(Config.appName, "config", "ui_connection_attempts"))
-	Config.UIConnectionTimeout  = tonumber(cursor:get(Config.appName, "config", "ui_connection_timeout"))
-	Config.tcpPort              = tonumber(cursor:get(Config.appName, "config", "tcp_port"))
-
-else
-	io.stderr:write("libuci-lua does not exists! The default settings will be used...\n")
+if not uci then
+	error("You need to install libuci-lua...")
 end
+
+-- Load settings from UCI
+
+local uciCursor             = uci.cursor()
+Config.mode                 = uciCursor:get(Config.appName, "config", "mode")
+Config.hosts                = uciCursor:get(Config.appName, "config", "hosts")
+Config.checkType            = tonumber(uciCursor:get(Config.appName, "config", "check_type"))
+Config.tcpPort              = tonumber(uciCursor:get(Config.appName, "config", "tcp_port"))
+Config.UIConnectionAttempts = tonumber(uciCursor:get(Config.appName, "ui_config", "connection_attempts"))
+Config.UIConnectionTimeout  = tonumber(uciCursor:get(Config.appName, "ui_config", "connection_timeout"))
+Config.enableLogger         = uciCursor:get(Config.appName, "service_config", "enable_logger")
+Config.enableUpScript       = uciCursor:get(Config.appName, "service_config", "enable_up_script")
+Config.enableDownScript     = uciCursor:get(Config.appName, "service_config", "enable_down_script")
+Config.enableRunScript      = uciCursor:get(Config.appName, "service_config", "enable_run_script")
+Config.intervalUp           = tonumber(uciCursor:get(Config.appName, "service_config", "interval_up"))
+Config.intervalDown         = tonumber(uciCursor:get(Config.appName, "service_config", "interval_down"))
+Config.connectionAttempts   = tonumber(uciCursor:get(Config.appName, "service_config", "connection_attempts"))
+Config.connectionTimeout    = tonumber(uciCursor:get(Config.appName, "service_config", "connection_timeout"))
 
 local function writeValueToFile(filePath, str)
 	local retValue = false
@@ -112,6 +112,28 @@ local function writeLogMessage(level, msg)
 		--fh:close()
 		nixio.syslog(level, string.format("%s[%d]: %s", Config.appName, (pidValue or ""), msg))
 	end
+end
+
+local function loadModules()
+	package.path = string.format("%s;%s/?.lua", package.path, Config.modulesDir)
+	Config.modules = {}
+	uciCursor:foreach(
+		Config.appName,
+		"module",
+		function(s)
+			local mod_name = s[".name"]
+			if mod_name and s.enabled == "1" then
+				local m = prequire(mod_name)
+				if m then
+					m.syslog     = writeLogMessage
+					m.writeValue = writeValueToFile
+					m.readValue  = readValueFromFile
+					m:init(s)
+					Config.modules[#Config.modules + 1] = m
+				end
+			end
+		end
+	)
 end
 
 local function runExternalScript(scriptPath, inetStat)
@@ -164,7 +186,7 @@ local function tcpConnectToHost(host, port)
 end
 
 local function checkHosts()
-	local checkFunc = (Config.checkType == 1) and tcpConnectToHost or pingHost
+	local checkFunc = (Config.checkType == 1) and pingHost or tcpConnectToHost
 	local retCode = 1
 	for k, v in ipairs(Config.parsedHosts) do
 		for i = 1, Config.connectionAttempts do
@@ -181,20 +203,20 @@ local function checkHosts()
 end
 
 local function main()
-	local last_status
-	local current_status
+	local lastStatus
+	local currentStatus
 	local interval = Config.intervalUp
 
 	while true do
-		current_status = checkHosts()
+		currentStatus = checkHosts()
 		if not nixio.fs.access(Config.statusFile, "r") then
-			writeValueToFile(Config.statusFile, current_status)
+			writeValueToFile(Config.statusFile, currentStatus)
 		end
 
-		if current_status == 0 then
+		if currentStatus == 0 then
 			interval = Config.intervalUp
-			if last_status ~= nil and current_status ~= last_status then
-				writeValueToFile(Config.statusFile, current_status)
+			if lastStatus ~= nil and currentStatus ~= lastStatus then
+				writeValueToFile(Config.statusFile, currentStatus)
 				writeLogMessage("notice", "internet connected")
 				if Config.enableUpScript == "1" then
 					runExternalScript(Config.upScript)
@@ -202,8 +224,8 @@ local function main()
 			end
 		else
 			interval = Config.intervalDown
-			if last_status ~= nil and current_status ~= last_status then
-				writeValueToFile(Config.statusFile, current_status)
+			if lastStatus ~= nil and currentStatus ~= lastStatus then
+				writeValueToFile(Config.statusFile, currentStatus)
 				writeLogMessage("notice", "internet disconnected")
 				if Config.enableDownScript == "1" then
 					runExternalScript(Config.downScript)
@@ -211,11 +233,15 @@ local function main()
 			end
 		end
 
-		if Config.enableRunScript == "1" then
-			runExternalScript(Config.runScript, current_status)
+		for _, e in ipairs(Config.modules) do
+			e:run(currentStatus, lastStatus)
 		end
 
-		last_status = current_status
+		if Config.enableRunScript == "1" then
+			runExternalScript(Config.runScript, currentStatus)
+		end
+
+		lastStatus = currentStatus
 		nixio.nanosleep(interval)
 	end
 end
@@ -312,6 +338,19 @@ local function run()
 	local pidValue = nixio.getpid()
 	writeValueToFile(Config.pidFile, pidValue)
 	writeLogMessage("info", "started")
+	loadModules()
+
+	-- Loaded modules
+	local modules = {}
+	for _, v in ipairs(Config.modules) do
+		modules[#modules + 1] = string.format("%s", v.name)
+	end
+	if #modules > 0 then
+		writeLogMessage(
+			"info", string.format("Loaded modules: %s", table.concat(modules, ", "))
+		)
+	end
+
 	main()
 end
 

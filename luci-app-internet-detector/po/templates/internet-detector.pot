@@ -13,10 +13,16 @@ msgstr ""
 msgid "Checking Internet availability."
 msgstr ""
 
+msgid "Collecting data..."
+msgstr ""
+
 msgid "Command failed"
 msgstr ""
 
 msgid "Connected"
+msgstr ""
+
+msgid "Connection attempts"
 msgstr ""
 
 msgid "Connection timeout"
@@ -203,4 +209,19 @@ msgid "sec"
 msgstr ""
 
 msgid "up-script"
+msgstr ""
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
+msgstr ""
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> is on when Internet is available."
+msgstr ""
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> Name"
+msgstr ""
+
+msgid "Enable <abbr title=\"Light Emitting Diode\">LED</abbr> control"
+msgstr ""
+
+msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
 msgstr ""

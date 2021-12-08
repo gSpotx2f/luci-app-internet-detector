@@ -4,7 +4,7 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_VERSION:=0.3.0-3
+PKG_VERSION:=0.4-1
 LUCI_TITLE:=LuCI support for internet-detector
 LUCI_DEPENDS:=+internet-detector
 LUCI_PKGARCH:=all

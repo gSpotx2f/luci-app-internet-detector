@@ -3,6 +3,7 @@
 		"description": "Grant access to internet-detector procedures",
 		"read": {
 			"file": {
+				"/sys/class/leds": [ "list" ],
 				"/etc/internet-detector/up-script": [ "read" ],
 				"/etc/internet-detector/down-script": [ "read" ],
 				"/etc/internet-detector/run-script": [ "read" ],
