@@ -624,12 +624,12 @@ return view.extend({
 			)
 		);
 
-		let promises = [ mMain.render(), mUi.render(), mService.render() ];
-		if(mLed) {
-			promises.push(mLed.render());
-		};
-
-		Promise.all(promises).then(maps => {
+		Promise.all([
+			mMain.render(),
+			mUi.render(),
+			mService.render(),
+			mLed.render(),
+		]).then(maps => {
 			let settingsTabs  = E('div', { 'class': 'cbi-section fade-in' });
 			let tabsContainer = E('div', { 'class': 'cbi-section-node cbi-section-node-tabbed' });
 			settingsTabs.append(tabsContainer);
@@ -655,9 +655,7 @@ return view.extend({
 			}, maps[2]);
 
 			// LED control
-			if(maps[3]) {
-				serviceTab.append(maps[3]);
-			};
+			serviceTab.append(maps[3]);
 
 			tabsContainer.append(serviceTab);
 
