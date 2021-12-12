@@ -15,10 +15,10 @@
 
 local Config = {
 	["mode"]                 = 2,
-	["enableLogger"]         = 1,
-	["enableUpScript"]       = 0,
-	["enableDownScript"]     = 0,
-	["enableRunScript"]      = 0,
+	["enableLogger"]         = true,
+	["enableUpScript"]       = false,
+	["enableDownScript"]     = false,
+	["enableRunScript"]      = false,
 	["intervalUp"]           = 30,
 	["intervalDown"]         = 5,
 	["connectionAttempts"]   = 1,
@@ -37,7 +37,6 @@ local Config = {
 	["tcpPort"]              = 53,
 	["checkType"]            = 0,	-- 0: TCP, 1: ping
 	["loggerLevel"]          = "info",
-	--["loggerCmd"]          = "logger",
 	["modules"]              = {},
 }
 Config.configDir  = "/etc/" .. Config.appName
@@ -48,7 +47,7 @@ Config.runScript  = Config.configDir .. "/" .. "run-script"
 Config.pidFile    = Config.commonDir .. "/" .. Config.appName .. ".pid"
 Config.statusFile = Config.commonDir .. "/" .. Config.appName .. ".status"
 
--- Import packages
+-- Importing packages
 
 local function prequire(package)
 	local retVal, pkg = pcall(require, package)
@@ -65,27 +64,39 @@ if not uci then
 	error("You need to install libuci-lua...")
 end
 
--- Load settings from UCI
+-- Loading settings from UCI
 
 local uciCursor             = uci.cursor()
 Config.mode                 = uciCursor:get(Config.appName, "config", "mode")
 Config.hosts                = uciCursor:get(Config.appName, "config", "hosts")
-Config.checkType            = tonumber(uciCursor:get(Config.appName, "config", "check_type"))
-Config.tcpPort              = tonumber(uciCursor:get(Config.appName, "config", "tcp_port"))
-Config.UIConnectionAttempts = tonumber(uciCursor:get(Config.appName, "ui_config", "connection_attempts"))
-Config.UIConnectionTimeout  = tonumber(uciCursor:get(Config.appName, "ui_config", "connection_timeout"))
-Config.enableLogger         = uciCursor:get(Config.appName, "service_config", "enable_logger")
-Config.enableUpScript       = uciCursor:get(Config.appName, "service_config", "enable_up_script")
-Config.enableDownScript     = uciCursor:get(Config.appName, "service_config", "enable_down_script")
-Config.enableRunScript      = uciCursor:get(Config.appName, "service_config", "enable_run_script")
-Config.intervalUp           = tonumber(uciCursor:get(Config.appName, "service_config", "interval_up"))
-Config.intervalDown         = tonumber(uciCursor:get(Config.appName, "service_config", "interval_down"))
-Config.connectionAttempts   = tonumber(uciCursor:get(Config.appName, "service_config", "connection_attempts"))
-Config.connectionTimeout    = tonumber(uciCursor:get(Config.appName, "service_config", "connection_timeout"))
+Config.checkType            = tonumber(uciCursor:get(
+								Config.appName, "config", "check_type"))
+Config.tcpPort              = tonumber(uciCursor:get(
+								Config.appName, "config", "tcp_port"))
+Config.UIConnectionAttempts = tonumber(uciCursor:get(
+								Config.appName, "ui_config", "connection_attempts"))
+Config.UIConnectionTimeout  = tonumber(uciCursor:get(
+								Config.appName, "ui_config", "connection_timeout"))
+Config.enableLogger         = (tonumber(uciCursor:get(
+								Config.appName, "service_config", "enable_logger")) ~= 0)
+Config.enableUpScript       = (tonumber(uciCursor:get(
+								Config.appName, "service_config", "enable_up_script")) ~= 0)
+Config.enableDownScript     = (tonumber(uciCursor:get(
+								Config.appName, "service_config", "enable_down_script")) ~= 0)
+Config.enableRunScript      = (tonumber(uciCursor:get(
+								Config.appName, "service_config", "enable_run_script")) ~= 0)
+Config.intervalUp           = tonumber(uciCursor:get(
+								Config.appName, "service_config", "interval_up"))
+Config.intervalDown         = tonumber(uciCursor:get(
+								Config.appName, "service_config", "interval_down"))
+Config.connectionAttempts   = tonumber(uciCursor:get(
+								Config.appName, "service_config", "connection_attempts"))
+Config.connectionTimeout    = tonumber(uciCursor:get(
+								Config.appName, "service_config", "connection_timeout"))
 
 local function writeValueToFile(filePath, str)
 	local retValue = false
-	local fh = io.open(filePath, "w")
+	local fh       = io.open(filePath, "w")
 	if fh then
 		fh:setvbuf("no")
 		fh:write(string.format("%s\n", str))
@@ -105,15 +116,6 @@ local function readValueFromFile(filePath)
 	return retValue
 end
 
-local function writeLogMessage(level, msg)
-	if Config.enableLogger == "1" then
-		local pidValue = readValueFromFile(Config.pidFile)
-		--local fh = io.popen(string.format('%s -t "%s[%d]" -p daemon.%s "%s"', Config.loggerCmd, Config.appName, (pidValue or ""), level, msg), 'r')
-		--fh:close()
-		nixio.syslog(level, string.format("%s[%d]: %s", Config.appName, (pidValue or ""), msg))
-	end
-end
-
 local function loadModules()
 	package.path = string.format("%s;%s/?.lua", package.path, Config.modulesDir)
 	Config.modules = {}
@@ -125,7 +127,7 @@ local function loadModules()
 			if mod_name and s.enabled == "1" then
 				local m = prequire(mod_name)
 				if m then
-					m.syslog     = writeLogMessage
+					m.syslog     = nixio.syslog
 					m.writeValue = writeValueToFile
 					m.readValue  = readValueFromFile
 					m:init(s)
@@ -141,7 +143,8 @@ local function runExternalScript(scriptPath, inetStat)
 		inetStat = ""
 	end
 	if nixio.fs.access(scriptPath, "x") then
-		local fh = io.popen(string.format('/bin/sh -c "%s %s" &', scriptPath, inetStat), "r")
+		local fh = io.popen(
+			string.format('/bin/sh -c "%s %s" &', scriptPath, inetStat), "r")
 		fh:close()
 	end
 end
@@ -217,8 +220,8 @@ local function main()
 			interval = Config.intervalUp
 			if lastStatus ~= nil and currentStatus ~= lastStatus then
 				writeValueToFile(Config.statusFile, currentStatus)
-				writeLogMessage("notice", "internet connected")
-				if Config.enableUpScript == "1" then
+				nixio.syslog("notice", "internet connected")
+				if Config.enableUpScript then
 					runExternalScript(Config.upScript)
 				end
 			end
@@ -226,8 +229,8 @@ local function main()
 			interval = Config.intervalDown
 			if lastStatus ~= nil and currentStatus ~= lastStatus then
 				writeValueToFile(Config.statusFile, currentStatus)
-				writeLogMessage("notice", "internet disconnected")
-				if Config.enableDownScript == "1" then
+				nixio.syslog("notice", "internet disconnected")
+				if Config.enableDownScript then
 					runExternalScript(Config.downScript)
 				end
 			end
@@ -237,7 +240,7 @@ local function main()
 			e:run(currentStatus, lastStatus)
 		end
 
-		if Config.enableRunScript == "1" then
+		if Config.enableRunScript then
 			runExternalScript(Config.runScript, currentStatus)
 		end
 
@@ -294,6 +297,7 @@ end
 
 local function stop()
 	local pidValue
+	nixio.openlog(Config.appName)
 	if nixio.fs.access(Config.pidFile, "r") then
 		pidValue = readValueFromFile(Config.pidFile)
 		if pidValue then
@@ -307,20 +311,20 @@ local function stop()
 			if not success then
 				io.stderr:write(string.format('No such process: "%s"\n', pidValue))
 			end
-			writeLogMessage("info", "stoped")
+			nixio.syslog("info", string.format("[%s] stoped", pidValue))
 			removeProcessFiles()
 		end
 	end
-
 	if not pidValue then
 		io.stderr:write(
 			string.format('PID file "%s" does not exist. %s not running?\n',
 				Config.pidFile, Config.appName))
 	end
+	nixio.closelog()
 end
 
 local function preRun()
-	-- Exit if internet detector mode != 2(Service)
+	-- Exit if internet-detector mode != 2(Service)
 	if Config.mode ~= "2" then
 		io.stderr:write(string.format('Start failed, mode != "2"\n', Config.appName))
 		os.exit(0)
@@ -337,7 +341,8 @@ end
 local function run()
 	local pidValue = nixio.getpid()
 	writeValueToFile(Config.pidFile, pidValue)
-	writeLogMessage("info", "started")
+	nixio.openlog(Config.appName, "pid")
+	nixio.syslog("info", "started")
 	loadModules()
 
 	-- Loaded modules
@@ -346,12 +351,13 @@ local function run()
 		modules[#modules + 1] = string.format("%s", v.name)
 	end
 	if #modules > 0 then
-		writeLogMessage(
+		nixio.syslog(
 			"info", string.format("Loaded modules: %s", table.concat(modules, ", "))
 		)
 	end
 
 	main()
+	nixio.closelog()
 end
 
 local function noDaemon()
@@ -394,7 +400,10 @@ end
 parseHosts()
 
 local function help()
-	return string.format("Usage: %s [start|no-daemon|stop|restart|status|inet-status|poll [<attempts num>] [<timeout sec>]|--help]", arg[0])
+	return string.format(
+		"Usage: %s [start|no-daemon|stop|restart|status|inet-status|poll [<attempts num>] [<timeout sec>]|--help]",
+		arg[0]
+	)
 end
 
 local helpArgs = {["-h"] = true, ["--help"] = true, ["help"] = true}
