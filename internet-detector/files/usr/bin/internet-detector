@@ -67,32 +67,33 @@ end
 -- Loading settings from UCI
 
 local uciCursor             = uci.cursor()
-Config.mode                 = uciCursor:get(Config.appName, "config", "mode")
+Config.mode                 = tonumber(uciCursor:get(
+                               Config.appName, "config", "mode"))
 Config.hosts                = uciCursor:get(Config.appName, "config", "hosts")
 Config.checkType            = tonumber(uciCursor:get(
-								Config.appName, "config", "check_type"))
+                               Config.appName, "config", "check_type"))
 Config.tcpPort              = tonumber(uciCursor:get(
-								Config.appName, "config", "tcp_port"))
+                               Config.appName, "config", "tcp_port"))
 Config.UIConnectionAttempts = tonumber(uciCursor:get(
-								Config.appName, "ui_config", "connection_attempts"))
+                               Config.appName, "ui_config", "connection_attempts"))
 Config.UIConnectionTimeout  = tonumber(uciCursor:get(
-								Config.appName, "ui_config", "connection_timeout"))
+                               Config.appName, "ui_config", "connection_timeout"))
 Config.enableLogger         = (tonumber(uciCursor:get(
-								Config.appName, "service_config", "enable_logger")) ~= 0)
+                               Config.appName, "service_config", "enable_logger")) ~= 0)
 Config.enableUpScript       = (tonumber(uciCursor:get(
-								Config.appName, "service_config", "enable_up_script")) ~= 0)
+                               Config.appName, "service_config", "enable_up_script")) ~= 0)
 Config.enableDownScript     = (tonumber(uciCursor:get(
-								Config.appName, "service_config", "enable_down_script")) ~= 0)
+                               Config.appName, "service_config", "enable_down_script")) ~= 0)
 Config.enableRunScript      = (tonumber(uciCursor:get(
-								Config.appName, "service_config", "enable_run_script")) ~= 0)
+                               Config.appName, "service_config", "enable_run_script")) ~= 0)
 Config.intervalUp           = tonumber(uciCursor:get(
-								Config.appName, "service_config", "interval_up"))
+                               Config.appName, "service_config", "interval_up"))
 Config.intervalDown         = tonumber(uciCursor:get(
-								Config.appName, "service_config", "interval_down"))
+                               Config.appName, "service_config", "interval_down"))
 Config.connectionAttempts   = tonumber(uciCursor:get(
-								Config.appName, "service_config", "connection_attempts"))
+                               Config.appName, "service_config", "connection_attempts"))
 Config.connectionTimeout    = tonumber(uciCursor:get(
-								Config.appName, "service_config", "connection_timeout"))
+                               Config.appName, "service_config", "connection_timeout"))
 
 local function writeValueToFile(filePath, str)
 	local retValue = false
@@ -172,12 +173,12 @@ local function pingHost(host)
 end
 
 local function tcpConnectToHost(host, port)
-	local retCode = 1
+	local retCode  = 1
 	local addrInfo = nixio.getaddrinfo(host, "any")
 	if addrInfo then
 		local family = addrInfo[1].family
 		if family then
-			local socket = nixio.socket(family, "stream")
+			local socket  = nixio.socket(family, "stream")
 			socket:setopt("socket", "sndtimeo", Config.connectionTimeout)
 			socket:setopt("socket", "rcvtimeo", Config.connectionTimeout)
 			local success = socket:connect(host, port or Config.tcpPort)
@@ -190,7 +191,7 @@ end
 
 local function checkHosts()
 	local checkFunc = (Config.checkType == 1) and pingHost or tcpConnectToHost
-	local retCode = 1
+	local retCode   = 1
 	for k, v in ipairs(Config.parsedHosts) do
 		for i = 1, Config.connectionAttempts do
 			if checkFunc(v[1], v[2]) == 0 then
@@ -263,7 +264,7 @@ local function status()
 end
 
 local function poll(attempts, timeout)
-	if Config.mode == "1" then
+	if Config.mode == 1 then
 		Config.connectionAttempts = Config.UIConnectionAttempts
 		Config.connectionTimeout  = Config.UIConnectionTimeout
 	end
@@ -287,7 +288,7 @@ local function inetStatus()
 		if inetStatVal ~= nil and tonumber(inetStatVal) == 0 then
 			inetStat = "up"
 		end
-	elseif Config.mode == "1" then
+	elseif Config.mode == 1 then
 		inetStat = poll()
 	else
 		os.exit(126)
@@ -324,9 +325,9 @@ local function stop()
 end
 
 local function preRun()
-	-- Exit if internet-detector mode != 2(Service)
-	if Config.mode ~= "2" then
-		io.stderr:write(string.format('Start failed, mode != "2"\n', Config.appName))
+	-- Exit if internet detector mode != 2(Service)
+	if Config.mode ~= 2 then
+		io.stderr:write(string.format('Start failed, mode != 2\n', Config.appName))
 		os.exit(0)
 	end
 	if nixio.fs.access(Config.pidFile, "r") then
