@@ -117,6 +117,12 @@ local function readValueFromFile(filePath)
 	return retValue
 end
 
+local function writeLogMessage(level, msg)
+	if Config.enableLogger then
+		nixio.syslog(level, msg)
+	end
+end
+
 local function loadModules()
 	package.path = string.format("%s;%s/?.lua", package.path, Config.modulesDir)
 	Config.modules = {}
@@ -128,7 +134,7 @@ local function loadModules()
 			if mod_name and s.enabled == "1" then
 				local m = prequire(mod_name)
 				if m then
-					m.syslog     = nixio.syslog
+					m.syslog     = writeLogMessage
 					m.writeValue = writeValueToFile
 					m.readValue  = readValueFromFile
 					m:init(s)
@@ -221,7 +227,7 @@ local function main()
 			interval = Config.intervalUp
 			if lastStatus ~= nil and currentStatus ~= lastStatus then
 				writeValueToFile(Config.statusFile, currentStatus)
-				nixio.syslog("notice", "internet connected")
+				writeLogMessage("notice", "internet connected")
 				if Config.enableUpScript then
 					runExternalScript(Config.upScript)
 				end
@@ -230,7 +236,7 @@ local function main()
 			interval = Config.intervalDown
 			if lastStatus ~= nil and currentStatus ~= lastStatus then
 				writeValueToFile(Config.statusFile, currentStatus)
-				nixio.syslog("notice", "internet disconnected")
+				writeLogMessage("notice", "internet disconnected")
 				if Config.enableDownScript then
 					runExternalScript(Config.downScript)
 				end
@@ -298,7 +304,9 @@ end
 
 local function stop()
 	local pidValue
-	nixio.openlog(Config.appName)
+	if Config.enableLogger then
+		nixio.openlog(Config.appName)
+	end
 	if nixio.fs.access(Config.pidFile, "r") then
 		pidValue = readValueFromFile(Config.pidFile)
 		if pidValue then
@@ -312,7 +320,7 @@ local function stop()
 			if not success then
 				io.stderr:write(string.format('No such process: "%s"\n', pidValue))
 			end
-			nixio.syslog("info", string.format("[%s] stoped", pidValue))
+			writeLogMessage("info", string.format("[%s] stoped", pidValue))
 			removeProcessFiles()
 		end
 	end
@@ -321,11 +329,13 @@ local function stop()
 			string.format('PID file "%s" does not exist. %s not running?\n',
 				Config.pidFile, Config.appName))
 	end
-	nixio.closelog()
+	if Config.enableLogger then
+		nixio.closelog()
+	end
 end
 
 local function preRun()
-	-- Exit if internet detector mode != 2(Service)
+	-- Exit if internet-detector mode != 2(Service)
 	if Config.mode ~= 2 then
 		io.stderr:write(string.format('Start failed, mode != 2\n', Config.appName))
 		os.exit(0)
@@ -342,8 +352,10 @@ end
 local function run()
 	local pidValue = nixio.getpid()
 	writeValueToFile(Config.pidFile, pidValue)
-	nixio.openlog(Config.appName, "pid")
-	nixio.syslog("info", "started")
+	if Config.enableLogger then
+		nixio.openlog(Config.appName, "pid")
+	end
+	writeLogMessage("info", "started")
 	loadModules()
 
 	-- Loaded modules
@@ -352,13 +364,15 @@ local function run()
 		modules[#modules + 1] = string.format("%s", v.name)
 	end
 	if #modules > 0 then
-		nixio.syslog(
+		writeLogMessage(
 			"info", string.format("Loaded modules: %s", table.concat(modules, ", "))
 		)
 	end
 
 	main()
-	nixio.closelog()
+	if Config.enableLogger then
+		nixio.closelog()
+	end
 end
 
 local function noDaemon()

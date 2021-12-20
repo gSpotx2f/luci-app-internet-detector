@@ -239,13 +239,13 @@ return view.extend({
 						};
 						if(!this.ctx.initStatus) {
 							this.ctx.initButton.textContent = _('Enabled');
-							this.ctx.initButton.className = btnStyleEnabled;
-							this.ctx.initStatus = true;
+							this.ctx.initButton.className   = btnStyleEnabled;
+							this.ctx.initStatus             = true;
 						}
 						else {
 							this.ctx.initButton.textContent = _('Disabled');
-							this.ctx.initButton.className = btnStyleDisabled;
-							this.ctx.initStatus = false;
+							this.ctx.initButton.className   = btnStyleDisabled;
+							this.ctx.initStatus             = false;
 						};
 					});
 				}),
