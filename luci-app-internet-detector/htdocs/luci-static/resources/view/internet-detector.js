@@ -218,92 +218,6 @@ return view.extend({
 		},
 	}),
 
-	CBIBlockService: form.DummyValue.extend({
-		ctx: null,
-
-		renderWidget: function(section_id, option_index, cfgvalue) {
-			this.title = this.description = null;
-
-			this.ctx.serviceButton = E('button', {
-				'class': btnStyleApply,
-				'click': ui.createHandlerFn(this.ctx, this.ctx.serviceRestart),
-			}, _('Restart'));
-			this.ctx.initButton = E('button', {
-				'class': (!this.ctx.initStatus) ? btnStyleDisabled : btnStyleEnabled,
-				'click': ui.createHandlerFn(this, () => {
-					return this.ctx.handleServiceAction(
-						(!this.ctx.initStatus) ? 'enable' : 'disable'
-					).then(success => {
-						if(!success) {
-							return;
-						};
-						if(!this.ctx.initStatus) {
-							this.ctx.initButton.textContent = _('Enabled');
-							this.ctx.initButton.className   = btnStyleEnabled;
-							this.ctx.initStatus             = true;
-						}
-						else {
-							this.ctx.initButton.textContent = _('Disabled');
-							this.ctx.initButton.className   = btnStyleDisabled;
-							this.ctx.initStatus             = false;
-						};
-					});
-				}),
-			}, (!this.ctx.initStatus) ? _('Disabled') : _('Enabled'));
-
-			this.ctx.setInternetStatus(true);
-
-			let serviceItems = '';
-			if(this.ctx.currentAppMode === '2') {
-				serviceItems = E([
-					E('div', { 'class': 'cbi-value' }, [
-						E('label', { 'class': 'cbi-value-title' },
-							_('Service')
-						),
-						E('div', { 'class': 'cbi-value-field' },
-							this.ctx.serviceStatusLabel
-						),
-					]),
-					E('div', { 'class': 'cbi-value' }, [
-						E('label', { 'class': 'cbi-value-title' },
-							_('Restart service')
-						),
-						E('div', { 'class': 'cbi-value-field' },
-							this.ctx.serviceButton
-						),
-					]),
-					E('div', { 'class': 'cbi-value' }, [
-						E('label', { 'class': 'cbi-value-title' },
-							_('Run service at startup')
-						),
-						E('div', { 'class': 'cbi-value-field' },
-							this.ctx.initButton
-						),
-					]),
-				]);
-			};
-
-			let internetStatus = (this.ctx.currentAppMode !== '0') ?
-				E('div', { 'class': 'cbi-value' }, [
-					E('label', { 'class': 'cbi-value-title' },
-						_('Internet status')
-					),
-					E('div', { 'class': 'cbi-value-field' }, [
-						this.ctx.inetStatusLabel,
-						(!this.ctx.inetStatus) ? this.ctx.inetStatusSpinner : '',
-					]),
-				])
-			: '';
-
-			return E('div', { 'class': 'cbi-section fade-in' },
-				E('div', { 'class': 'cbi-section-node' }, [
-					internetStatus,
-					serviceItems,
-				])
-			);
-		},
-	}),
-
 	servicePoll: function() {
 		return Promise.all([
 			fs.exec(this.execPath, [ 'status' ]),
@@ -349,6 +263,86 @@ return view.extend({
 				this.setInternetStatus();
 			};
 		});
+	},
+
+	serviceControlWidget: function() {
+		this.serviceButton = E('button', {
+			'class': btnStyleApply,
+			'click': ui.createHandlerFn(this, this.serviceRestart),
+		}, _('Restart'));
+		this.initButton = E('button', {
+			'class': (!this.initStatus) ? btnStyleDisabled : btnStyleEnabled,
+			'click': ui.createHandlerFn(this, () => {
+				return this.handleServiceAction(
+					(!this.initStatus) ? 'enable' : 'disable'
+				).then(success => {
+					if(!success) {
+						return;
+					};
+					if(!this.initStatus) {
+						this.initButton.textContent = _('Enabled');
+						this.initButton.className   = btnStyleEnabled;
+						this.initStatus             = true;
+					}
+					else {
+						this.initButton.textContent = _('Disabled');
+						this.initButton.className   = btnStyleDisabled;
+						this.initStatus             = false;
+					};
+				});
+			}),
+		}, (!this.initStatus) ? _('Disabled') : _('Enabled'));
+
+		this.setInternetStatus(true);
+
+		let serviceItems = '';
+		if(this.currentAppMode === '2') {
+			serviceItems = E([
+				E('div', { 'class': 'cbi-value' }, [
+					E('label', { 'class': 'cbi-value-title' },
+						_('Service')
+					),
+					E('div', { 'class': 'cbi-value-field' },
+						this.serviceStatusLabel
+					),
+				]),
+				E('div', { 'class': 'cbi-value' }, [
+					E('label', { 'class': 'cbi-value-title' },
+						_('Restart service')
+					),
+					E('div', { 'class': 'cbi-value-field' },
+						this.serviceButton
+					),
+				]),
+				E('div', { 'class': 'cbi-value' }, [
+					E('label', { 'class': 'cbi-value-title' },
+						_('Run service at startup')
+					),
+					E('div', { 'class': 'cbi-value-field' },
+						this.initButton
+					),
+				]),
+			]);
+		};
+
+		let internetStatus = (this.currentAppMode !== '0') ?
+			E('div', { 'class': 'cbi-value' }, [
+				E('label', { 'class': 'cbi-value-title' },
+					_('Internet status')
+				),
+				E('div', { 'class': 'cbi-value-field' }, [
+					this.inetStatusLabel,
+					(!this.inetStatus) ? this.inetStatusSpinner : '',
+				]),
+			])
+		: '';
+
+		return E('div', { 'class': 'cbi-section fade-in' },
+			E('div', { 'class': 'cbi-section-node' }, [
+				internetStatus,
+				serviceItems,
+			])
+		);
 	},
 
 	load: function() {
@@ -398,10 +392,6 @@ return view.extend({
 
 		let mMain = new form.Map('internet-detector');
 		s         = mMain.section(form.NamedSection, 'config');
-
-		// service widget
-		o     = s.option(this.CBIBlockService, '_dummy_service');
-		o.ctx = this;
 
 		// mode
 		o = s.option(form.ListValue,
@@ -630,15 +620,18 @@ return view.extend({
 			mService.render(),
 			mLed.render(),
 		]).then(maps => {
-			let settingsTabs  = E('div', { 'class': 'cbi-section fade-in' });
-			let tabsContainer = E('div', { 'class': 'cbi-section-node cbi-section-node-tabbed' });
+			let settingsTabs  = E('div', { 'class': 'fade-in' });
+			let tabsContainer = E('div', { 'class': 'cbi-section cbi-section-node-tabbed' });
 			settingsTabs.append(tabsContainer);
 
 			// Main settings tab
 			let mainTab  = E('div', {
 				'data-tab'      : 0,
 				'data-tab-title': _('Main settings'),
-			}, maps[0]);
+			}, [
+				this.serviceControlWidget(),
+				maps[0],
+			]);
 			tabsContainer.append(mainTab);
 
 			// UI detector configuration tab
@@ -652,11 +645,10 @@ return view.extend({
 			let serviceTab = E('div', {
 				'data-tab'      : 2,
 				'data-tab-title': _('Service configuration'),
-			}, maps[2]);
-
-			// LED control
-			serviceTab.append(maps[3]);
-
+			}, [
+				maps[2],
+				maps[3],
+			]);
 			tabsContainer.append(serviceTab);
 
 			ui.tabs.initTabGroup(tabsContainer.children);
