@@ -1,9 +1,8 @@
 'use strict';
-'require baseclass';
 'require fs';
 'require uci';
 
-return baseclass.extend({
+return L.Class.extend({
 	title      : _('Internet'),
 	execPath   : '/usr/bin/internet-detector',
 	inetStatus : null,
