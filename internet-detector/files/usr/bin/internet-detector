@@ -14,38 +14,36 @@
 -- Default settings
 
 local Config = {
-	["mode"]                 = 2,
-	["enableLogger"]         = true,
-	["enableUpScript"]       = false,
-	["enableDownScript"]     = false,
-	["enableRunScript"]      = false,
-	["intervalUp"]           = 30,
-	["intervalDown"]         = 5,
-	["connectionAttempts"]   = 1,
-	["UIConnectionAttempts"] = 1,
-	["hosts"]                = {
+	mode                 = 2,
+	enableLogger         = true,
+	intervalUp           = 30,
+	intervalDown         = 5,
+	connectionAttempts   = 2,
+	connectionTimeout    = 2,
+	UIConnectionAttempts = 1,
+	UIConnectionTimeout  = 1,
+	hosts                = {
 		[1] = "8.8.8.8",
 		[2] = "1.1.1.1",
 	},
-	["parsedHosts"]          = {},
-	["appName"]              = "internet-detector",
-	["commonDir"]            = "/tmp/run",
-	["pingCmd"]              = "ping",
-	["pingParams"]           = "-c 1",
-	["connectionTimeout"]    = 3,
-	["UIConnectionTimeout"]  = 1,
-	["tcpPort"]              = 53,
-	["checkType"]            = 0,	-- 0: TCP, 1: ping
-	["loggerLevel"]          = "info",
-	["modules"]              = {},
+	tcpPort              = 53,
+	pingPacketSize       = 56,
+	iface                = nil,
+	checkType            = 0,	-- 0: TCP, 1: ping
+	hostname             = "OpenWrt",
+	appName              = "internet-detector",
+	commonDir            = "/tmp/run",
+	debugLog             = "/tmp/internet-detector.debug",
+	pingCmd              = "/bin/ping",
+	pingParams           = "-c 1",
+	debug                = false,
+	modules              = {},
+	parsedHosts          = {},
 }
-Config.configDir  = "/etc/" .. Config.appName
-Config.modulesDir = "/usr/lib/" .. Config.appName
-Config.upScript   = Config.configDir .. "/" .. "up-script"
-Config.downScript = Config.configDir .. "/" .. "down-script"
-Config.runScript  = Config.configDir .. "/" .. "run-script"
-Config.pidFile    = Config.commonDir .. "/" .. Config.appName .. ".pid"
-Config.statusFile = Config.commonDir .. "/" .. Config.appName .. ".status"
+Config.configDir  = string.format("/etc/%s", Config.appName)
+Config.modulesDir = string.format("/usr/lib/%s", Config.appName)
+Config.pidFile    = string.format("%s/%s.pid", Config.commonDir, Config.appName)
+Config.statusFile = string.format("%s/%s.status", Config.commonDir, Config.appName)
 
 -- Importing packages
 
@@ -69,31 +67,48 @@ end
 local uciCursor             = uci.cursor()
 Config.mode                 = tonumber(uciCursor:get(
                                Config.appName, "config", "mode"))
+Config.enableLogger         = (tonumber(uciCursor:get(
+                               Config.appName, "config", "service_enable_logger")) ~= 0)
+Config.intervalUp           = tonumber(uciCursor:get(
+                               Config.appName, "config", "service_interval_up"))
+Config.intervalDown         = tonumber(uciCursor:get(
+                               Config.appName, "config", "service_interval_down"))
+Config.connectionAttempts   = tonumber(uciCursor:get(
+                               Config.appName, "config", "service_connection_attempts"))
+Config.connectionTimeout    = tonumber(uciCursor:get(
+                               Config.appName, "config", "service_connection_timeout"))
+Config.UIConnectionAttempts = tonumber(uciCursor:get(
+                               Config.appName, "config", "ui_connection_attempts"))
+Config.UIConnectionTimeout  = tonumber(uciCursor:get(
+                               Config.appName, "config", "ui_connection_timeout"))
 Config.hosts                = uciCursor:get(Config.appName, "config", "hosts")
+
+local tcpPort               = uciCursor:get(
+                               Config.appName, "config", "tcp_port")
+if tcpPort ~= nil then
+	Config.tcpPort = tonumber(tcpPort)
+end
+
+local pingPacketSize        = uciCursor:get(
+                               Config.appName, "config", "ping_packet_size")
+if pingPacketSize ~= nil then
+	Config.pingPacketSize = tonumber(pingPacketSize)
+end
+
+local iface                 = uciCursor:get(
+                               Config.appName, "config", "iface")
+if iface ~= nil then
+	Config.iface = iface
+end
+
 Config.checkType            = tonumber(uciCursor:get(
                                Config.appName, "config", "check_type"))
-Config.tcpPort              = tonumber(uciCursor:get(
-                               Config.appName, "config", "tcp_port"))
-Config.UIConnectionAttempts = tonumber(uciCursor:get(
-                               Config.appName, "ui_config", "connection_attempts"))
-Config.UIConnectionTimeout  = tonumber(uciCursor:get(
-                               Config.appName, "ui_config", "connection_timeout"))
-Config.enableLogger         = (tonumber(uciCursor:get(
-                               Config.appName, "service_config", "enable_logger")) ~= 0)
-Config.enableUpScript       = (tonumber(uciCursor:get(
-                               Config.appName, "service_config", "enable_up_script")) ~= 0)
-Config.enableDownScript     = (tonumber(uciCursor:get(
-                               Config.appName, "service_config", "enable_down_script")) ~= 0)
-Config.enableRunScript      = (tonumber(uciCursor:get(
-                               Config.appName, "service_config", "enable_run_script")) ~= 0)
-Config.intervalUp           = tonumber(uciCursor:get(
-                               Config.appName, "service_config", "interval_up"))
-Config.intervalDown         = tonumber(uciCursor:get(
-                               Config.appName, "service_config", "interval_down"))
-Config.connectionAttempts   = tonumber(uciCursor:get(
-                               Config.appName, "service_config", "connection_attempts"))
-Config.connectionTimeout    = tonumber(uciCursor:get(
-                               Config.appName, "service_config", "connection_timeout"))
+
+local hostname              = uciCursor:get("system", "@[0]", "hostname")
+if hostname ~= nil then
+	Config.hostname = hostname
+end
+
 
 local function writeValueToFile(filePath, str)
 	local retValue = false
@@ -124,7 +139,7 @@ local function writeLogMessage(level, msg)
 end
 
 local function loadModules()
-	package.path = string.format("%s;%s/?.lua", package.path, Config.modulesDir)
+	package.path   = string.format("%s;%s/?.lua", package.path, Config.modulesDir)
 	Config.modules = {}
 	uciCursor:foreach(
 		Config.appName,
@@ -134,6 +149,7 @@ local function loadModules()
 			if mod_name and s.enabled == "1" then
 				local m = prequire(mod_name)
 				if m then
+					m.config     = Config
 					m.syslog     = writeLogMessage
 					m.writeValue = writeValueToFile
 					m.readValue  = readValueFromFile
@@ -145,40 +161,43 @@ local function loadModules()
 	)
 end
 
-local function runExternalScript(scriptPath, inetStat)
-	if inetStat == nil then
-		inetStat = ""
-	end
-	if nixio.fs.access(scriptPath, "x") then
-		local fh = io.popen(
-			string.format('/bin/sh -c "%s %s" &', scriptPath, inetStat), "r")
-		fh:close()
-	end
-end
-
 local function parseHost(host)
-	local port
-	local addr = host:match("^[^:]+")
-	if host:find(":") then
-		port = host:match("[^:]+$")
-	end
-	return addr, port
+	local addr, port = host:match("^([^:]+):?(%d*)")
+	return addr, tonumber(port) or false
 end
 
 local function parseHosts()
 	Config.parsedHosts = {}
 	for k, v in ipairs(Config.hosts) do
 		local addr, port = parseHost(v)
-		Config.parsedHosts[k] = {[1] = addr, [2] = (tonumber(port) or false)}
+		Config.parsedHosts[k] = { addr = addr, port = port }
 	end
 end
 
 local function pingHost(host)
-	return os.execute(string.format("%s %s -W %d %s > /dev/null 2>&1",
-		Config.pingCmd, Config.pingParams, Config.connectionTimeout, host))
+	local ping = string.format(
+		"%s %s -W %d -s %d%s %s > /dev/null 2>&1",
+		Config.pingCmd,
+		Config.pingParams,
+		Config.connectionTimeout,
+		Config.pingPacketSize,
+		Config.iface and (" -I " .. Config.iface) or "",
+		host
+	)
+	local retCode = os.execute(ping)
+
+	-- Debug
+	if Config.debug then
+		io.stdout:write(string.format(
+			"--- Ping ---\ntime = %s\n%s\nretCode = %s\n", os.time(), ping, retCode)
+		)
+		io.stdout:flush()
+	end
+
+	return retCode
 end
 
-local function tcpConnectToHost(host, port)
+local function TCPConnectionToHost(host, port)
 	local retCode  = 1
 	local addrInfo = nixio.getaddrinfo(host, "any")
 	if addrInfo then
@@ -187,7 +206,31 @@ local function tcpConnectToHost(host, port)
 			local socket  = nixio.socket(family, "stream")
 			socket:setopt("socket", "sndtimeo", Config.connectionTimeout)
 			socket:setopt("socket", "rcvtimeo", Config.connectionTimeout)
+			if Config.iface then
+				socket:setopt("socket", "bindtodevice", Config.iface)
+			end
 			local success = socket:connect(host, port or Config.tcpPort)
+
+			-- Debug
+			if Config.debug then
+				local sockAddr, sockPort = socket:getsockname()
+				local peerAddr, peerPort = socket:getpeername()
+				io.stdout:write(string.format(
+					"--- TCP ---\ntime = %s\nconnectionTimeout = %s\niface = %s\nhost:port = %s:%s\nsockname = %s:%s\npeername = %s:%s\nsuccess = %s\n",
+					os.time(),
+					Config.connectionTimeout,
+					tostring(Config.iface),
+					host,
+					port or Config.tcpPort,
+					tostring(sockAddr),
+					tostring(sockPort),
+					tostring(peerAddr),
+					tostring(peerPort),
+					tostring(success))
+				)
+				io.stdout:flush()
+			end
+
 			socket:close()
 			retCode = success and 0 or 1
 		end
@@ -196,11 +239,11 @@ local function tcpConnectToHost(host, port)
 end
 
 local function checkHosts()
-	local checkFunc = (Config.checkType == 1) and pingHost or tcpConnectToHost
+	local checkFunc = (Config.checkType == 1) and pingHost or TCPConnectionToHost
 	local retCode   = 1
 	for k, v in ipairs(Config.parsedHosts) do
 		for i = 1, Config.connectionAttempts do
-			if checkFunc(v[1], v[2]) == 0 then
+			if checkFunc(v.addr, v.port) == 0 then
 				retCode = 0
 				break
 			end
@@ -213,46 +256,48 @@ local function checkHosts()
 end
 
 local function main()
-	local lastStatus
-	local currentStatus
+	local lastStatus, currentStatus, timeNow, timeDiff, lastTime
 	local interval = Config.intervalUp
+	local counter  = 0
 
 	while true do
-		currentStatus = checkHosts()
-		if not nixio.fs.access(Config.statusFile, "r") then
-			writeValueToFile(Config.statusFile, currentStatus)
-		end
-
-		if currentStatus == 0 then
-			interval = Config.intervalUp
-			if lastStatus ~= nil and currentStatus ~= lastStatus then
+		if counter == 0 or counter >= interval then
+			currentStatus = checkHosts()
+			if not nixio.fs.access(Config.statusFile, "r") then
 				writeValueToFile(Config.statusFile, currentStatus)
-				writeLogMessage("notice", "internet connected")
-				if Config.enableUpScript then
-					runExternalScript(Config.upScript)
+			end
+
+			if currentStatus == 0 then
+				interval = Config.intervalUp
+				if lastStatus ~= nil and currentStatus ~= lastStatus then
+					writeValueToFile(Config.statusFile, currentStatus)
+					writeLogMessage("notice", "Internet connected")
+				end
+			else
+				interval = Config.intervalDown
+				if lastStatus ~= nil and currentStatus ~= lastStatus then
+					writeValueToFile(Config.statusFile, currentStatus)
+					writeLogMessage("notice", "Internet disconnected")
 				end
 			end
-		else
-			interval = Config.intervalDown
-			if lastStatus ~= nil and currentStatus ~= lastStatus then
-				writeValueToFile(Config.statusFile, currentStatus)
-				writeLogMessage("notice", "internet disconnected")
-				if Config.enableDownScript then
-					runExternalScript(Config.downScript)
-				end
-			end
+
+			counter = 0
 		end
 
+		timeDiff = 0
 		for _, e in ipairs(Config.modules) do
-			e:run(currentStatus, lastStatus)
+			timeNow = nixio.sysinfo().uptime
+			if lastTime then
+				timeDiff = timeDiff + timeNow - lastTime
+			else
+				timeDiff = 1
+			end
+			lastTime = timeNow
+			e:run(currentStatus, lastStatus, timeDiff)
 		end
-
-		if Config.enableRunScript then
-			runExternalScript(Config.runScript, currentStatus)
-		end
-
 		lastStatus = currentStatus
-		nixio.nanosleep(interval)
+		nixio.nanosleep(1)
+		counter    = counter + 1
 	end
 end
 
@@ -369,6 +414,30 @@ local function run()
 		)
 	end
 
+	-- Debug
+	if Config.debug then
+
+		local function inspectTable()
+			local tables = {}, f
+			f = function(t, prefix)
+				tables[t] = true
+				for k, v in pairs(t) do
+					io.stdout:write(string.format(
+						"%s%s = %s\n", prefix, k, tostring(v))
+					)
+					if type(v) == "table" and not tables[v] then
+						f(v, string.format("%s%s.", prefix, k))
+					end
+				end
+			end
+			return f
+		end
+
+		io.stdout:write("--- Config ---\n")
+		inspectTable()(Config, "Config.")
+		io.stdout:flush()
+	end
+
 	main()
 	if Config.enableLogger then
 		nixio.closelog()
@@ -382,7 +451,7 @@ local function noDaemon()
 	run()
 end
 
-local function daemon()
+local function daemon(debug)
 	if not preRun() then
 		return
 	end
@@ -392,12 +461,16 @@ local function daemon()
 		if nixio.fork() == 0 then
 			nixio.chdir("/")
 			nixio.umask(0)
-			local devnull = "/dev/null"
+			local output = "/dev/null"
+			if debug then
+				output       = Config.debugLog
+				Config.debug = true
+			end
 			io.stdout:flush()
 			io.stderr:flush()
-			nixio.dup(io.open(devnull, "r"), io.stdin)
-			nixio.dup(io.open(devnull, "a+"), io.stdout)
-			nixio.dup(io.open(devnull, "a+"), io.stderr)
+			nixio.dup(io.open("/dev/null", "r"), io.stdin)
+			nixio.dup(io.open(output, "a+"), io.stdout)
+			nixio.dup(io.open(output, "a+"), io.stderr)
 			run()
 		end
 		os.exit(0)
@@ -416,16 +489,18 @@ parseHosts()
 
 local function help()
 	return string.format(
-		"Usage: %s [start|no-daemon|stop|restart|status|inet-status|poll [<attempts num>] [<timeout sec>]|--help]",
+		"Usage: %s [start|stop|restart|no-daemon|debug|status|inet-status|poll [<attempts num>] [<timeout sec>]|--help]",
 		arg[0]
 	)
 end
 
-local helpArgs = {["-h"] = true, ["--help"] = true, ["help"] = true}
+local helpArgs = { ["-h"] = true, ["--help"] = true, ["help"] = true }
 if arg[1] == "start" or #arg == 0 then
 	daemon()
 elseif arg[1] == "no-daemon" then
 	noDaemon()
+elseif arg[1] == "debug" then
+	daemon(true)
 elseif arg[1] == "stop" then
 	stop()
 elseif arg[1] == "restart" then
