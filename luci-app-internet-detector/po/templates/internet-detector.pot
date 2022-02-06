@@ -1,19 +1,38 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8"
 
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> Name"
+msgstr ""
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
+msgstr ""
+
+msgid ""
+"<abbr title=\"Light Emitting Diode\">LED</abbr> is on when Internet is "
+"available."
+msgstr ""
+
 msgid "Alive interval"
 msgstr ""
 
+msgid "Alive period"
+msgstr ""
+
+msgid ""
+"An email will be sent when the internet connection is restored after being "
+"disconnected."
+msgstr ""
+
 msgid "An error has occurred"
+msgstr ""
+
+msgid "Big: 248 bytes"
 msgstr ""
 
 msgid "Check type"
 msgstr ""
 
 msgid "Checking Internet availability."
-msgstr ""
-
-msgid "Collecting data..."
 msgstr ""
 
 msgid "Command failed"
@@ -28,22 +47,28 @@ msgstr ""
 msgid "Connection timeout"
 msgstr ""
 
-msgid "Connections"
-msgstr ""
-
 msgid "Contents have been saved."
 msgstr ""
 
 msgid "Dead interval"
 msgstr ""
 
-msgid "Default port value for TCP connections"
+msgid "Dead period"
+msgstr ""
+
+msgid "Default port value for TCP connections."
+msgstr ""
+
+msgid "Device will be rebooted when the Internet is disconnected."
+msgstr ""
+
+msgid "Disable forced reboot"
 msgstr ""
 
 msgid "Disabled"
 msgstr ""
 
-msgid "Disabled: detector is completely off"
+msgid "Disabled: detector is completely off."
 msgstr ""
 
 msgid "Disconnected"
@@ -58,52 +83,66 @@ msgstr ""
 msgid "Edit down-script"
 msgstr ""
 
-msgid "Edit run-script"
-msgstr ""
-
 msgid "Edit up-script"
 msgstr ""
 
-msgid "Enable down-script"
+msgid "Email notification"
+msgstr ""
+
+msgid "Email address of the recipient."
+msgstr ""
+
+msgid "Email address of the sender."
+msgstr ""
+
+msgid "Enable"
 msgstr ""
 
 msgid "Enable logging"
 msgstr ""
 
-msgid "Enable run-script"
-msgstr ""
-
-msgid "Enable up-script"
-msgstr ""
-
 msgid "Enabled"
 msgstr ""
 
-msgid "Execute commands every time the Internet is checked for availability"
-msgstr ""
-
-msgid "Execute commands when the Internet is connected"
-msgstr ""
-
-msgid "Execute commands when the Internet is disconnected"
+msgid "Expecting:"
 msgstr ""
 
 msgid "Failed to get %s init status: %s"
 msgstr ""
 
-msgid "Host availability check type"
+msgid "Forced reboot delay"
+msgstr ""
+
+msgid "Host alias"
+msgstr ""
+
+msgid "Host availability check type."
+msgstr ""
+
+msgid "Host identifier in messages. If not specified, hostname will be used."
+msgstr ""
+
+msgid "Hostname/IP address of the SMTP server."
 msgstr ""
 
 msgid "Hosts"
 msgstr ""
 
-msgid "Hosts polling interval when the Internet is down"
+msgid "Hosts polling interval when the Internet is down."
 msgstr ""
 
-msgid "Hosts polling interval when the Internet is up"
+msgid "Hosts polling interval when the Internet is up."
 msgstr ""
 
-msgid "Hosts to check Internet availability. Hosts are polled (in list order) until at least one of them responds"
+msgid ""
+"Hosts to check Internet availability. Hosts are polled (in list order) until "
+"at least one of them responds."
+msgstr ""
+
+msgid "Huge: 1492 bytes"
+msgstr ""
+
+msgid "Interface"
 msgstr ""
 
 msgid "Internet"
@@ -118,31 +157,149 @@ msgstr ""
 msgid "Internet status"
 msgstr ""
 
+msgid "Jumbo: 9000 bytes"
+msgstr ""
+
+msgid "LED control"
+msgstr ""
+
 msgid "Loading"
+msgstr ""
+
+msgid ""
+"Longest period of time after connecting to Internet before \"up-script\" "
+"runs."
+msgstr ""
+
+msgid ""
+"Longest period of time after connecting to the Internet before sending a "
+"message."
+msgstr ""
+
+msgid ""
+"Longest period of time after disconnecting from Internet before \"down-script"
+"\" runs."
+msgstr ""
+
+msgid "Longest period of time without Internet access before modem restart."
+msgstr ""
+
+msgid "Longest period of time without Internet access before network restart."
+msgstr ""
+
+msgid ""
+"Longest period of time without Internet access until the device is rebooted."
+msgstr ""
+
+msgid "Mailsend is not available..."
 msgstr ""
 
 msgid "Main settings"
 msgstr ""
 
-msgid "Maximum timeout for waiting for a response from the host"
+msgid "Maximum number of attempts to connect to each host."
 msgstr ""
 
-msgid "Maximum number of attempts to connect to each host"
+msgid ""
+"Maximum number of network restart attempts before Internet access is "
+"available."
+msgstr ""
+
+msgid "Maximum timeout for waiting for a response from the host."
+msgstr ""
+
+msgid "Modem will be restarted when the Internet is disconnected."
+msgstr ""
+
+msgid "ModemManager is not available..."
+msgstr ""
+
+msgid ""
+"ModemManger interface. If specified, it will be restarted after restarting "
+"ModemManager."
+msgstr ""
+
+msgid ""
+"Network interface for Internet access. If not specified, the default "
+"interface is used."
+msgstr ""
+
+msgid ""
+"Network interface to restart. If not specified, then the network service is restarted."
+msgstr ""
+
+msgid "Network will be restarted when the Internet is disconnected."
+msgstr ""
+
+msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
+msgstr ""
+
+msgid "One of the following:"
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "Password for SMTP authentication."
+msgstr ""
+
+msgid ""
+"Performing actions when connecting and disconnecting the Internet (available "
+"in the \"Service\" mode)."
 msgstr ""
 
 msgid "Ping host"
 msgstr ""
 
+msgid "Ping packet size"
+msgstr ""
+
+msgid "Reboot device"
+msgstr ""
+
+msgid "Recipient"
+msgstr ""
+
 msgid "Restart"
 msgstr ""
 
+msgid "Restart attempts"
+msgstr ""
+
+msgid "Restart modem"
+msgstr ""
+
+msgid "Restart network"
+msgstr ""
+
 msgid "Restart service"
+msgstr ""
+
+msgid "Restart timeout"
 msgstr ""
 
 msgid "Run service at startup"
 msgstr ""
 
 msgid "Running"
+msgstr ""
+
+msgid "SMTP server"
+msgstr ""
+
+msgid "SMTP server port"
+msgstr ""
+
+msgid "SSL: SMTP over SSL."
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Security"
+msgstr ""
+
+msgid "Sender"
 msgstr ""
 
 msgid "Service"
@@ -154,16 +311,28 @@ msgstr ""
 msgid "Service configuration"
 msgstr ""
 
-msgid "Service: detector always runs as a system service"
+msgid "Service modules"
 msgstr ""
 
-msgid "Shell commands that are executed every time the Internet is checked for availability"
+msgid "Service: detector always runs as a system service."
 msgstr ""
 
-msgid "Shell commands that run when connected to the Internet"
+msgid "Set the modem to be allowed to use any band."
 msgstr ""
 
-msgid "Shell commands to run when disconnected from the Internet"
+msgid "Shell commands that run when connected to the Internet."
+msgstr ""
+
+msgid "Shell commands to run when connected or disconnected from the Internet."
+msgstr ""
+
+msgid "Shell commands to run when disconnected from the Internet."
+msgstr ""
+
+msgid "Small: 1 byte"
+msgstr ""
+
+msgid "Standard: 56 bytes"
 msgstr ""
 
 msgid "Stopped"
@@ -173,6 +342,15 @@ msgid "TCP port"
 msgstr ""
 
 msgid "TCP port connection"
+msgstr ""
+
+msgid "TLS: use STARTTLS if the server supports it."
+msgstr ""
+
+msgid "Timeout between stopping and starting the interface."
+msgstr ""
+
+msgid "Type a time string"
 msgstr ""
 
 msgid "UI detector configuration"
@@ -187,41 +365,53 @@ msgstr ""
 msgid "Undefined"
 msgstr ""
 
+msgid "Unlock modem bands"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "User scripts"
+msgstr ""
+
+msgid "Username for SMTP authentication."
+msgstr ""
+
+msgid "Waiting for a reboot to complete before performing a forced reboot."
+msgstr ""
+
 msgid "Web UI only"
 msgstr ""
 
-msgid "Web UI only: detector works only when the Web UI is open (UI detector)"
+msgid "Web UI only: detector works only when the Web UI is open (UI detector)."
 msgstr ""
 
-msgid "Write messages to the system log"
+msgid "Windows: 32 bytes"
+msgstr ""
+
+msgid "Write messages to the system log."
 msgstr ""
 
 msgid "down-script"
 msgstr ""
 
+msgid "hour"
+msgstr ""
+
+msgid "hours"
+msgstr ""
+
 msgid "min"
 msgstr ""
 
-msgid "run-script"
+msgid "minutes"
 msgstr ""
 
 msgid "sec"
 msgstr ""
 
+msgid "seconds"
+msgstr ""
+
 msgid "up-script"
-msgstr ""
-
-msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
-msgstr ""
-
-msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> is on when Internet is available."
-msgstr ""
-
-msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> Name"
-msgstr ""
-
-msgid "Enable <abbr title=\"Light Emitting Diode\">LED</abbr> control"
-msgstr ""
-
-msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
 msgstr ""

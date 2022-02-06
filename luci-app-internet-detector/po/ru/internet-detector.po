@@ -9,23 +9,43 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.4.2\n"
 "Last-Translator: \n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? "
+"1 : 2);\n"
 "Language: ru\n"
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> Name"
+msgstr "Имя <abbr title=\"Светодиод\">LED</abbr>"
+
+msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
+msgstr "Управление <abbr title=\"Светодиод\">LED</abbr>"
+
+msgid ""
+"<abbr title=\"Light Emitting Diode\">LED</abbr> is on when Internet is "
+"available."
+msgstr "<abbr title=\"Светодиод\">LED</abbr> включен если Интернет доступен."
 
 msgid "Alive interval"
 msgstr "Интервал при подключении"
 
+msgid "Alive period"
+msgstr "Период после подключения"
+
+msgid ""
+"An email will be sent when the internet connection is restored after being "
+"disconnected."
+msgstr "Сообщение будет отправлено при восстановлении соединения с Интернет после отключения."
+
 msgid "An error has occurred"
 msgstr "Произошла ошибка"
+
+msgid "Big: 248 bytes"
+msgstr "Большой: 248 байт"
 
 msgid "Check type"
 msgstr "Тип проверки"
 
 msgid "Checking Internet availability."
 msgstr "Проверка доступности Интернет."
-
-msgid "Collecting data..."
-msgstr "Сбор данных..."
 
 msgid "Command failed"
 msgstr "Команда не выполнена"
@@ -39,23 +59,29 @@ msgstr "Попытки подключения"
 msgid "Connection timeout"
 msgstr "Таймаут соединения"
 
-msgid "Connections"
-msgstr "Подключения"
-
 msgid "Contents have been saved."
 msgstr "Содержимое сохранено."
 
 msgid "Dead interval"
 msgstr "Интервал при отключении"
 
-msgid "Default port value for TCP connections"
-msgstr "Стандартное значение порта для TCP-подключений"
+msgid "Dead period"
+msgstr "Период после отключения"
+
+msgid "Default port value for TCP connections."
+msgstr "Стандартное значение порта для TCP-подключений."
+
+msgid "Device will be rebooted when the Internet is disconnected."
+msgstr "Устройство будет перезагружено при отключении Интернет."
+
+msgid "Disable forced reboot"
+msgstr "Отключить принудительную перезагрузку"
 
 msgid "Disabled"
 msgstr "Отключен"
 
-msgid "Disabled: detector is completely off"
-msgstr "Отключен: детектор полностью выключен"
+msgid "Disabled: detector is completely off."
+msgstr "Отключен: детектор полностью выключен."
 
 msgid "Disconnected"
 msgstr "Отключен"
@@ -69,53 +95,69 @@ msgstr "Изменить"
 msgid "Edit down-script"
 msgstr "Изменить down-script"
 
-msgid "Edit run-script"
-msgstr "Изменить run-script"
-
 msgid "Edit up-script"
 msgstr "Изменить up-script"
 
-msgid "Enable down-script"
-msgstr "Включить down-script"
+msgid "Email notification"
+msgstr "Уведомление по email"
+
+msgid "Email address of the recipient."
+msgstr "Email-адрес получателя."
+
+msgid "Email address of the sender."
+msgstr "Email-адрес отправителя."
+
+msgid "Enable"
+msgstr "Включить"
 
 msgid "Enable logging"
 msgstr "Включить запись событий в лог"
 
-msgid "Enable run-script"
-msgstr "Включить run-script"
-
-msgid "Enable up-script"
-msgstr "Включить up-script"
-
 msgid "Enabled"
 msgstr "Включен"
 
-msgid "Execute commands every time the Internet is checked for availability"
-msgstr "Выполнение команд при каждой проверке доступности Интернет"
-
-msgid "Execute commands when the Internet is connected"
-msgstr "Выполнение команд при подключении к Интернет"
-
-msgid "Execute commands when the Internet is disconnected"
-msgstr "Выполнение команд при отключении от Интернет"
+msgid "Expecting:"
+msgstr "Ожидается:"
 
 msgid "Failed to get %s init status: %s"
 msgstr "Не удалось получить статус инициализации %s: %s"
 
-msgid "Host availability check type"
-msgstr "Тип проверки доступности хоста"
+msgid "Forced reboot delay"
+msgstr "Задержка принудительной перезагрузки"
+
+msgid "Host alias"
+msgstr "Псевдоним хоста"
+
+msgid "Host availability check type."
+msgstr "Тип проверки доступности хоста."
+
+msgid "Host identifier in messages. If not specified, hostname will be used."
+msgstr "Идентификатор хоста в сообщениях. Если не указан, будет использовано имя хоста."
+
+msgid "Hostname/IP address of the SMTP server."
+msgstr "Имя хоста/IP-адрес SMTP-сервера."
 
 msgid "Hosts"
 msgstr "Хосты"
 
-msgid "Hosts polling interval when the Internet is down"
-msgstr "Интервал опроса хостов если Интернет не доступен"
+msgid "Hosts polling interval when the Internet is down."
+msgstr "Интервал опроса хостов если Интернет не доступен."
 
-msgid "Hosts polling interval when the Internet is up"
-msgstr "Интервал опроса хостов если Интернет доступен"
+msgid "Hosts polling interval when the Internet is up."
+msgstr "Интервал опроса хостов если Интернет доступен."
 
-msgid "Hosts to check Internet availability. Hosts are polled (in list order) until at least one of them responds"
-msgstr "Хосты для проверки доступности Интернет. Хосты опрашиваются (в порядке списка) до тех пор, пока хотя бы один из них не ответит"
+msgid ""
+"Hosts to check Internet availability. Hosts are polled (in list order) until "
+"at least one of them responds."
+msgstr ""
+"Хосты для проверки доступности Интернет. Хосты опрашиваются (в порядке "
+"списка) до тех пор, пока хотя бы один из них не ответит."
+
+msgid "Huge: 1492 bytes"
+msgstr "Огромный: 1492 байта"
+
+msgid "Interface"
+msgstr "Интерфейс"
 
 msgid "Internet"
 msgstr "Интернет"
@@ -129,26 +171,144 @@ msgstr "Режим интернет-детектора"
 msgid "Internet status"
 msgstr "Статус Интернет"
 
+msgid "Jumbo: 9000 bytes"
+msgstr "Гигантский: 9000 байт"
+
+msgid "LED control"
+msgstr "Управление LED"
+
 msgid "Loading"
 msgstr "Загрузка"
+
+msgid ""
+"Longest period of time after connecting to Internet before \"up-script\" "
+"runs."
+msgstr ""
+"Максимальный промежуток времени после подключения к Интернет перед запуском "
+"\"up-script\"."
+
+msgid ""
+"Longest period of time after connecting to the Internet before sending a "
+"message."
+msgstr "Максимальный промежуток времени после отключения Интернет перед отправкой сообщения."
+
+msgid ""
+"Longest period of time after disconnecting from Internet before \"down-script"
+"\" runs."
+msgstr ""
+"Максимальный промежуток времени после отключения Интернет перед запуском "
+"\"down-script\"."
+
+msgid "Longest period of time without Internet access before modem restart."
+msgstr ""
+"Максимальное время отсутствия доступа в Интренет перед перезапуском модема."
+
+msgid "Longest period of time without Internet access before network restart."
+msgstr ""
+"Максимальное время отсутствия доступа в Интренет перед перезапуском сети."
+
+msgid ""
+"Longest period of time without Internet access until the device is rebooted."
+msgstr ""
+"Максимальное время отсутствия доступа в Интренет перед перезагрузкой "
+"устройства."
+
+msgid "Mailsend is not available..."
+msgstr "Mailsend недоступен..."
 
 msgid "Main settings"
 msgstr "Основные настройки"
 
-msgid "Maximum timeout for waiting for a response from the host"
-msgstr "Маскимальный таймаут ожидания ответа от хоста"
+msgid "Maximum number of attempts to connect to each host."
+msgstr "Максимальное количество попыток подключения к каждому хосту."
 
-msgid "Maximum number of attempts to connect to each host"
-msgstr "Максимальное количество попыток подключения к каждому хосту"
+msgid ""
+"Maximum number of network restart attempts before Internet access is "
+"available."
+msgstr ""
+"Максимальное количество попыток перезапуска сети до появления доступа в "
+"Интренет."
+
+msgid "Maximum timeout for waiting for a response from the host."
+msgstr "Максимальный таймаут ожидания ответа от хоста."
+
+msgid "Modem will be restarted when the Internet is disconnected."
+msgstr "Модем будет перезапущен при отключении Интернет."
+
+msgid "ModemManager is not available..."
+msgstr "ModemManager недоступен..."
+
+msgid ""
+"ModemManger interface. If specified, it will be restarted after restarting "
+"ModemManager."
+msgstr ""
+"Интерфейс ModemManager. Если задан, то будет перезапущен после перезапуска "
+"ModemManger."
+
+msgid ""
+"Network interface for Internet access. If not specified, the default "
+"interface is used."
+msgstr ""
+"Сетевой интерфейс для доступа в Интернет. Если не указан, используется "
+"интерфейс по умолчанию."
+
+msgid ""
+"Network interface to restart. If not specified, then the network service is restarted."
+msgstr ""
+"Сетевой интерфейс для перезапуска. Если не задан, то будет перезапущена сетевая "
+"служба."
+
+msgid "Network will be restarted when the Internet is disconnected."
+msgstr "Сеть будет перезапущена при отключении Интернет."
+
+msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
+msgstr "Нет доступных <abbr title=\"Светодиод\">LED</abbr>..."
+
+msgid "One of the following:"
+msgstr "Одно из следующих значений:"
+
+msgid "Password"
+msgstr "Пароль"
+
+msgid "Password for SMTP authentication."
+msgstr "Пароль для SMTP-аутентификации."
+
+msgid ""
+"Performing actions when connecting and disconnecting the Internet (available "
+"in the \"Service\" mode)."
+msgstr ""
+"Выполнение действий при подключении и отключении Интернет (доступно в режиме "
+"\"Служба\")."
 
 msgid "Ping host"
 msgstr "Пинг хоста"
 
+msgid "Ping packet size"
+msgstr "Размер пакета Ping"
+
+msgid "Reboot device"
+msgstr "Перезагрузка устройства"
+
+msgid "Recipient"
+msgstr "Получатель"
+
 msgid "Restart"
 msgstr "Перезапуск"
 
+msgid "Restart attempts"
+msgstr "Попытки перезапуска"
+
+msgid "Restart modem"
+msgstr "Перезапуск модема"
+
+msgid "Restart network"
+msgstr "Перезапуск сети"
+
 msgid "Restart service"
 msgstr "Перезапуск службы"
+
+msgid "Restart timeout"
+msgstr "Таймаут перезапуска"
 
 msgid "Run service at startup"
 msgstr "Запуск службы при старте"
@@ -156,8 +316,23 @@ msgstr "Запуск службы при старте"
 msgid "Running"
 msgstr "Выполняется"
 
+msgid "SMTP server"
+msgstr "SMTP-сервер"
+
+msgid "SMTP server port"
+msgstr "Порт SMTP-сервера"
+
+msgid "SSL: SMTP over SSL."
+msgstr "SSL: SMTP поверх SSL."
+
 msgid "Save"
 msgstr "Сохранить"
+
+msgid "Security"
+msgstr "Безопасность"
+
+msgid "Sender"
+msgstr "Отправитель"
 
 msgid "Service"
 msgstr "Служба"
@@ -168,17 +343,29 @@ msgstr "Не удалось выполнить действие службы \"%
 msgid "Service configuration"
 msgstr "Конфигурация службы"
 
-msgid "Service: detector always runs as a system service"
-msgstr "Служба: детектор работает постоянно, как системная служба"
+msgid "Service modules"
+msgstr "Модули службы"
 
-msgid "Shell commands that are executed every time the Internet is checked for availability"
-msgstr "Команды shell выполняемые при каждой проверке доступности Интернет"
+msgid "Service: detector always runs as a system service."
+msgstr "Служба: детектор работает постоянно, как системная служба."
 
-msgid "Shell commands that run when connected to the Internet"
-msgstr "Команды shell выполняемые при подключении к Интернет"
+msgid "Set the modem to be allowed to use any band."
+msgstr "Разрешить модему использование любой частоты."
 
-msgid "Shell commands to run when disconnected from the Internet"
-msgstr "Команды shell выполняемые при отключении от Интернет"
+msgid "Shell commands that run when connected to the Internet."
+msgstr "Команды shell выполняемые при подключении к Интернет."
+
+msgid "Shell commands to run when connected or disconnected from the Internet."
+msgstr "Команды shell выполняемые при подключении или отключении Интернет."
+
+msgid "Shell commands to run when disconnected from the Internet."
+msgstr "Команды shell выполняемые при отключении от Интернет."
+
+msgid "Small: 1 byte"
+msgstr "Маленький: 1 байт"
+
+msgid "Standard: 56 bytes"
+msgstr "Стандартный: 56 байт"
 
 msgid "Stopped"
 msgstr "Остановлена"
@@ -188,6 +375,15 @@ msgstr "TCP-порт"
 
 msgid "TCP port connection"
 msgstr "Подключение к TCP-порту"
+
+msgid "TLS: use STARTTLS if the server supports it."
+msgstr "TLS: использовать STARTTLS если сервер поддерживает."
+
+msgid "Timeout between stopping and starting the interface."
+msgstr "Таймаут между остановкой и запуском интерфейса."
+
+msgid "Type a time string"
+msgstr "Введите строку времени"
 
 msgid "UI detector configuration"
 msgstr "Конфигурация UI детектора"
@@ -201,41 +397,57 @@ msgstr "Невозможно сохранить содержимое"
 msgid "Undefined"
 msgstr "Неопределён"
 
+msgid "Unlock modem bands"
+msgstr "Освободить частоты модема"
+
+msgid "User"
+msgstr "Пользователь"
+
+msgid "User scripts"
+msgstr "Пользовательские скрипты"
+
+msgid "Username for SMTP authentication."
+msgstr "Имя пользователя для SMTP-аутентификации."
+
+msgid "Waiting for a reboot to complete before performing a forced reboot."
+msgstr ""
+"Ожидание завершения перезагрузки перед выполнением принудительной "
+"перезагрузки."
+
 msgid "Web UI only"
 msgstr "Только web-интерфейс"
 
-msgid "Web UI only: detector works only when the Web UI is open (UI detector)"
-msgstr "Только web-интерфейс: детектор работает только в web-интерфейсе (UI детектор)"
+msgid "Web UI only: detector works only when the Web UI is open (UI detector)."
+msgstr ""
+"Только web-интерфейс: детектор работает только в web-интерфейсе (UI "
+"детектор)."
 
-msgid "Write messages to the system log"
-msgstr "Записывать сообщения в системный журнал"
+msgid "Windows: 32 bytes"
+msgstr "Windows: 32 байта"
+
+msgid "Write messages to the system log."
+msgstr "Записывать сообщения в системный журнал."
 
 msgid "down-script"
-msgstr ""
+msgstr "down-script"
+
+msgid "hour"
+msgstr "час"
+
+msgid "hours"
+msgstr "часы"
 
 msgid "min"
 msgstr "мин"
 
-msgid "run-script"
-msgstr ""
+msgid "minutes"
+msgstr "минуты"
 
 msgid "sec"
 msgstr "сек"
 
+msgid "seconds"
+msgstr "секунды"
+
 msgid "up-script"
-msgstr ""
-
-msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
-msgstr "Управление <abbr title=\"Светодиод\">LED</abbr>"
-
-msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> is on when Internet is available."
-msgstr "<abbr title=\"Светодиод\">LED</abbr> включен если Интернет доступен."
-
-msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> Name"
-msgstr "Имя <abbr title=\"Светодиод\">LED</abbr>"
-
-msgid "Enable <abbr title=\"Light Emitting Diode\">LED</abbr> control"
-msgstr "Включить управление <abbr title=\"Светодиод\">LED</abbr>"
-
-msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
-msgstr "Нет доступных <abbr title=\"Светодиод\">LED</abbr>..."
+msgstr "up-script"

@@ -10,7 +10,8 @@
 			"acl": [ "luci-app-internet-detector" ],
 			"fs": {
 				"/usr/bin/internet-detector": "executable"
-			}
+			},
+			"uci": { "internet-detector": true }
 		}
 	}
 }
