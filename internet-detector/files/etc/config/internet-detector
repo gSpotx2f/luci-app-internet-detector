@@ -31,7 +31,7 @@ config module 'mod_network_restart'
 config module 'mod_modem_restart'
 	option enabled '0'
 	option dead_period '600'
-	option any_band '1'
+	option any_band '0'
 
 config module 'mod_email'
 	option enabled '0'

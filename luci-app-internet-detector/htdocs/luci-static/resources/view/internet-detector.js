@@ -91,7 +91,6 @@ return view.extend({
 	inetStatusLabel     : E('span', { 'class': 'label' }),
 	inetStatusSpinner   : E('span', { 'class': 'spinning', 'style': 'margin-top:1em' }, ' '),
 	serviceStatusLabel  : E('em'),
-	serviceButton       : null,
 	initButton          : null,
 	uiPollCounter       : 0,
 	uiPollState         : null,
@@ -173,10 +172,10 @@ return view.extend({
 		},
 	}),
 
-	CBIBlockService: form.Value.extend({
-		__name__    : 'CBI.BlockService',
+	CBIBlockInetStatus: form.Value.extend({
+		__name__ : 'CBI.BlockInetStatus',
 
-		__init__    : function(map, section, ctx) {
+		__init__ : function(map, section, ctx) {
 			this.map      = map;
 			this.section  = section;
 			this.ctx      = ctx;
@@ -185,11 +184,56 @@ return view.extend({
 		},
 
 		renderWidget: function(section_id, option_index, cfgvalue) {
-			this.ctx.serviceButton = E('button', {
-				'class': btnStyleApply,
-				'click': ui.createHandlerFn(this.ctx, this.ctx.serviceRestart),
-			}, _('Restart'));
-			this.ctx.initButton    = E('button', {
+			this.ctx.setInternetStatus(true);
+
+			return E([
+				E('label', { 'class': 'cbi-value-title' },
+					_('Internet status')
+				),
+				E('div', { 'class': 'cbi-value-field' }, [
+					this.ctx.inetStatusLabel,
+					(!this.ctx.inetStatus) ? this.ctx.inetStatusSpinner : '',
+				]),
+			])
+		},
+	}),
+
+	CBIBlockServiceStatus: form.Value.extend({
+		__name__ : 'CBI.BlockServiceStatuse',
+
+		__init__ : function(map, section, ctx) {
+			this.map      = map;
+			this.section  = section;
+			this.ctx      = ctx;
+			this.optional = true;
+			this.rmempty  = true;
+		},
+
+		renderWidget: function(section_id, option_index, cfgvalue) {
+			return E([
+				E('label', { 'class': 'cbi-value-title' },
+					_('Service')
+				),
+				E('div', { 'class': 'cbi-value-field' },
+					this.ctx.serviceStatusLabel
+				),
+			]);
+		},
+	}),
+
+	CBIBlockInitButton: form.Value.extend({
+		__name__ : 'CBI.BlockInitButton',
+
+		__init__ : function(map, section, ctx) {
+			this.map      = map;
+			this.section  = section;
+			this.ctx      = ctx;
+			this.optional = true;
+			this.rmempty  = true;
+		},
+
+		renderWidget: function(section_id, option_index, cfgvalue) {
+			this.ctx.initButton = E('button', {
 				'class': (!this.ctx.initStatus) ? btnStyleDisabled : btnStyleEnabled,
 				'click': ui.createHandlerFn(this, () => {
 					return this.ctx.handleServiceAction(
@@ -212,56 +256,14 @@ return view.extend({
 				}),
 			}, (!this.ctx.initStatus) ? _('Disabled') : _('Enabled'));
 
-			this.ctx.setInternetStatus(true);
-
-			let serviceItems = '';
-			if(this.ctx.currentAppMode === '2') {
-				serviceItems = E([
-					E('div', { 'class': 'cbi-value' }, [
-						E('label', { 'class': 'cbi-value-title' },
-							_('Service')
-						),
-						E('div', { 'class': 'cbi-value-field' },
-							this.ctx.serviceStatusLabel
-						),
-					]),
-					E('div', { 'class': 'cbi-value' }, [
-						E('label', { 'class': 'cbi-value-title' },
-							_('Restart service')
-						),
-						E('div', { 'class': 'cbi-value-field' },
-							this.ctx.serviceButton
-						),
-					]),
-					E('div', { 'class': 'cbi-value' }, [
-						E('label', { 'class': 'cbi-value-title' },
-							_('Run service at startup')
-						),
-						E('div', { 'class': 'cbi-value-field' },
-							this.ctx.initButton
-						),
-					]),
-				]);
-			};
-
-			let internetStatus = (this.ctx.currentAppMode !== '0') ?
-				E('div', { 'class': 'cbi-value' }, [
-					E('label', { 'class': 'cbi-value-title' },
-						_('Internet status')
-					),
-					E('div', { 'class': 'cbi-value-field' }, [
-						this.ctx.inetStatusLabel,
-						(!this.ctx.inetStatus) ? this.ctx.inetStatusSpinner : '',
-					]),
-				])
-			: '';
-
-			return E('div', { 'class': 'cbi-section' },
-				E('div', { 'class': 'cbi-section-node' }, [
-					internetStatus,
-					serviceItems,
-				])
-			);
+			return E( [
+				E('label', { 'class': 'cbi-value-title' },
+					_('Run service at startup')
+				),
+				E('div', { 'class': 'cbi-value-field' },
+					this.ctx.initButton
+				),
+			]);
 		},
 	}),
 
@@ -285,11 +287,11 @@ return view.extend({
 					E('div', { 'class': 'cbi-section' },
 						E('p', {},
 							E('textarea', {
-								'id': 'widget.modal_content',
+								'id'   : 'widget.modal_content',
 								'class': 'cbi-input-textarea',
 								'style': 'width:100% !important',
-								'rows': 10,
-								'wrap': 'off',
+								'rows' : 10,
+								'wrap' : 'off',
 								'spellcheck': 'false',
 							},
 							content)
@@ -313,7 +315,7 @@ return view.extend({
 
 		handleSave: function(ev) {
 			let textarea = document.getElementById('widget.modal_content');
-			let value = textarea.value.trim().replace(/\r\n/g, '\n') + '\n';
+			let value    = textarea.value.trim().replace(/\r\n/g, '\n') + '\n';
 
 			return fs.write(this.file, value).then(rc => {
 				textarea.value = value;
@@ -366,15 +368,18 @@ return view.extend({
 	setInternetStatus: function(initial=false) {
 		if(this.inetStatus === 'up') {
 			this.inetStatusLabel.style.background = '#46a546';
-			this.inetStatusLabel.textContent = _('Connected');
+			this.inetStatusLabel.textContent      = _('Connected');
+			this.inetStatusLabel.style.color      = '#ffffff';
 		}
 		else if(this.inetStatus === 'down') {
-			this.inetStatusLabel.textContent = _('Disconnected');
-			this.inetStatusLabel.style.background = '#ff6c74';
+			this.inetStatusLabel.textContent      = _('Disconnected');
+			this.inetStatusLabel.style.background = '#ff4953';
+			this.inetStatusLabel.style.color      = '#ffffff';
 		}
 		else {
-			this.inetStatusLabel.textContent = _('Undefined');
-			this.inetStatusLabel.style.background = '#cccccc';
+			this.inetStatusLabel.textContent      = _('Undefined');
+			this.inetStatusLabel.style.background = '#9b9b9b';
+			this.inetStatusLabel.style.color      = '#ffffff';
 		};
 
 		if(!initial && this.inetStatusSpinner) {
@@ -408,7 +413,7 @@ return view.extend({
 	},
 
 	uiPoll: function() {
-		let curInetStatus = null;
+		let curInetStatus  = null;
 		this.uiPollCounter = ++this.uiPollCounter;
 
 		if((this.uiPollState === 0 && this.uiPollCounter % this.uiCheckIntervalUp) ||
@@ -473,12 +478,27 @@ return view.extend({
 		/* Service widget */
 
 		s     = m.section(form.NamedSection, 'config', 'main');
-		o     = s.option(this.CBIBlockService, this);
+		o     = s.option(this.CBIBlockInetStatus, this);
+
+		if(this.currentAppMode === '2') {
+			o = s.option(this.CBIBlockServiceStatus, this);
+
+			// restart button
+			o = s.option(form.Button,
+				'_restart_btn', _('Restart service')
+			);
+			o.onclick    = () => this.serviceRestart();
+			o.inputtitle = _('Restart');
+			o.inputstyle = btnStyleApply;
+
+			// init button
+			o = s.option(this.CBIBlockInitButton, this);
+		};
 
 
 		/* Main settings */
 
-		s     = m.section(form.NamedSection, 'config', 'main');
+		s = m.section(form.NamedSection, 'config', 'main');
 
 		s.tab('main_configuration', _('Main settings'));
 
@@ -653,7 +673,7 @@ return view.extend({
 
 		/* Modules */
 
-		s = m.section(form.NamedSection, 'config', 'main',
+		s = m.section(form.NamedSection, 'mod_led_control', 'module',
 			_('Service modules'),
 			_('Performing actions when connecting and disconnecting the Internet (available in the "Service" mode).'));
 
@@ -661,27 +681,27 @@ return view.extend({
 
 		s.tab('led_control', _('LED control'));
 
-		o = s.taboption('led_control', form.SectionValue, 'mod_led_control', form.NamedSection,
-			'mod_led_control', 'mod_led_control',
-			_('<abbr title="Light Emitting Diode">LED</abbr> control'),
-			_('<abbr title="Light Emitting Diode">LED</abbr> is on when Internet is available.'))
-		ss = o.subsection;
+		o = s.taboption('led_control', form.DummyValue, '_dummy');
+			o.rawhtml = true;
+			o.default = '<div class="cbi-section-descr">' +
+				_('<abbr title="Light Emitting Diode">LED</abbr> is on when Internet is available.') +
+				'</div>';
 
 		if(this.leds.length > 0) {
 
 			// enabled
-			o = ss.option(form.Flag, 'enabled',
+			o = s.taboption('led_control', form.Flag, 'enabled',
 				_('Enable'));
 			o.rmempty = false;
 
 			// led_name
-			o = ss.option(form.ListValue, 'led_name',
+			o = s.taboption('led_control', form.ListValue, 'led_name',
 				_('<abbr title="Light Emitting Diode">LED</abbr> Name'));
 			o.depends({ enabled: '1' });
 			this.leds.sort((a, b) => a.name > b.name);
 			this.leds.forEach(e => o.value(e.name));
 		} else {
-			o = ss.option(form.DummyValue, '_dummy');
+			o = s.taboption('led_control', form.DummyValue, '_dummy');
 			o.rawhtml = true;
 			o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
 				_('No <abbr title="Light Emitting Diode">LED</abbr>s available...') +
@@ -692,10 +712,15 @@ return view.extend({
 
 		s.tab('reboot_device', _('Reboot device'));
 
+		o = s.taboption('reboot_device', form.DummyValue, '_dummy');
+			o.rawhtml = true;
+			o.default = '<div class="cbi-section-descr">' +
+				_('Device will be rebooted when the Internet is disconnected.') +
+				'</div>';
+
 		o = s.taboption('reboot_device', form.SectionValue, 'mod_reboot', form.NamedSection,
-			'mod_reboot', 'mod_reboot',
-			_('Reboot device'),
-			_('Device will be rebooted when the Internet is disconnected.'));
+			'mod_reboot', 'mod_reboot'
+		);
 		ss = o.subsection;
 
 		// enabled
@@ -727,10 +752,15 @@ return view.extend({
 
 		s.tab('restart_network', _('Restart network'));
 
+		o = s.taboption('restart_network', form.DummyValue, '_dummy');
+			o.rawhtml = true;
+			o.default = '<div class="cbi-section-descr">' +
+				_('Network will be restarted when the Internet is disconnected.') +
+				'</div>';
+
 		o = s.taboption('restart_network', form.SectionValue, 'mod_network_restart', form.NamedSection,
-			'mod_network_restart', 'mod_network_restart',
-			_('Restart network'),
-			_('Network will be restarted when the Internet is disconnected.'));
+			'mod_network_restart', 'mod_network_restart'
+		);
 		ss = o.subsection;
 
 		// enabled
@@ -782,10 +812,15 @@ return view.extend({
 
 		s.tab('restart_modem', _('Restart modem'));
 
+		o = s.taboption('restart_modem', form.DummyValue, '_dummy');
+			o.rawhtml = true;
+			o.default = '<div class="cbi-section-descr">' +
+				_('Modem will be restarted when the Internet is disconnected.') +
+				'</div>';
+
 		o = s.taboption('restart_modem', form.SectionValue, 'mod_modem_restart', form.NamedSection,
-			'mod_modem_restart', 'mod_modem_restart',
-			_('Restart modem'),
-			_('Modem will be restarted when the Internet is disconnected.'));
+			'mod_modem_restart', 'mod_modem_restart'
+		);
 		ss = o.subsection;
 
 		if(this.mm) {
@@ -830,10 +865,15 @@ return view.extend({
 
 		s.tab('email', _('Email notification'));
 
+		o = s.taboption('email', form.DummyValue, '_dummy');
+			o.rawhtml = true;
+			o.default = '<div class="cbi-section-descr">' +
+				_('An email will be sent when the internet connection is restored after being disconnected.') +
+				'</div>';
+
 		o = s.taboption('email', form.SectionValue, 'mod_email', form.NamedSection,
-			'mod_email', 'mod_email',
-			_('Email notification'),
-			_('An email will be sent when the internet connection is restored after being disconnected.'));
+			'mod_email', 'mod_email'
+		);
 		ss = o.subsection;
 
 		if(this.mta) {
@@ -923,10 +963,15 @@ return view.extend({
 
 		s.tab('user_scripts', _('User scripts'));
 
+		o = s.taboption('user_scripts', form.DummyValue, '_dummy');
+			o.rawhtml = true;
+			o.default = '<div class="cbi-section-descr">' +
+				_('Shell commands to run when connected or disconnected from the Internet.') +
+				'</div>';
+
 		o = s.taboption('user_scripts', form.SectionValue, 'mod_user_scripts', form.NamedSection,
-			'mod_user_scripts', 'mod_user_scripts',
-			_('User scripts'),
-			_('Shell commands to run when connected or disconnected from the Internet.'));
+			'mod_user_scripts', 'mod_user_scripts'
+		);
 		ss = o.subsection;
 
 		// enabled
@@ -974,9 +1019,9 @@ return view.extend({
 			);
 		};
 
-		let map_promise = m.render();
-		map_promise.then(node => node.classList.add('fade-in'));
-		return map_promise;
+		let mapPromise = m.render();
+		mapPromise.then(node => node.classList.add('fade-in'));
+		return mapPromise;
 	},
 
 	handleSaveApply: function(ev, mode) {
