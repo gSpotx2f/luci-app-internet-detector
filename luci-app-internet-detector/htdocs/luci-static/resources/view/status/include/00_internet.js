@@ -67,14 +67,17 @@ return L.Class.extend({
 		if(window.internetDetectorState === 0) {
 			internetStatus.textContent      = _('Connected');
 			internetStatus.style.background = '#46a546';
+			internetStatus.style.color      = '#ffffff';
 		}
 		else if(window.internetDetectorState === 1) {
 			internetStatus.textContent      = _('Disconnected');
-			internetStatus.style.background = '#ff6c74';
+			internetStatus.style.background = '#ff4953';
+			internetStatus.style.color      = '#ffffff';
 		}
 		else {
-			internetStatus.textContent = _('Undefined');
-			internetStatus.background  = '#cccccc';
+			internetStatus.textContent      = _('Undefined');
+			internetStatus.style.background = '#9b9b9b';
+			internetStatus.style.color      = '#ffffff';
 		};
 
 		return E('div', {
