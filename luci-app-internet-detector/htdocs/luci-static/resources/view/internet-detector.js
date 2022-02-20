@@ -89,7 +89,7 @@ return view.extend({
 	initStatus          : null,
 	inetStatus          : null,
 	inetStatusLabel     : E('span', { 'class': 'label' }),
-	inetStatusSpinner   : E('span', { 'class': 'spinning', 'style': 'margin-top:1em' }, ' '),
+ 	inetStatusSpinner   : E('span', { 'style': 'margin-top:1em' }, ' '),
 	serviceStatusLabel  : E('em'),
 	initButton          : null,
 	uiPollCounter       : 0,
@@ -140,6 +140,90 @@ return view.extend({
 		});
 	},
 
+	setInetStatusSpinner: function() {
+		this.inetStatusSpinner.className = 'spinning';
+	},
+
+	unsetInetStatusSpinner: function() {
+		this.inetStatusSpinner.className = '';
+	},
+
+	setInternetStatus: function() {
+		if(this.inetStatus === 'up') {
+			this.inetStatusLabel.style.background = '#46a546';
+			this.inetStatusLabel.textContent      = _('Connected');
+			this.inetStatusLabel.style.color      = '#ffffff';
+			this.unsetInetStatusSpinner();
+		}
+		else if(this.inetStatus === 'down') {
+			this.inetStatusLabel.textContent      = _('Disconnected');
+			this.inetStatusLabel.style.background = '#ff4953';
+			this.inetStatusLabel.style.color      = '#ffffff';
+			this.unsetInetStatusSpinner();
+		}
+		else {
+			this.inetStatusLabel.textContent      = _('Undefined');
+			this.inetStatusLabel.style.background = '#9b9b9b';
+			this.inetStatusLabel.style.color      = '#ffffff';
+
+			if(this.currentAppMode !== '0' && this.appStatus !== 'stoped') {
+				this.setInetStatusSpinner();
+			};
+		};
+
+		if(this.appStatus === 'running') {
+			this.serviceStatusLabel.textContent = _('Running');
+		} else {
+			this.serviceStatusLabel.textContent = _('Stopped');
+		};
+	},
+
+	servicePoll: function() {
+		return Promise.all([
+			fs.exec(this.execPath, [ 'status' ]),
+			fs.exec(this.execPath, [ 'inet-status' ]),
+		]).then(stat => {
+			let curAppStatus  = (stat[0].code === 0) ? stat[0].stdout.trim() : null;
+			let curInetStatus = (stat[1].code === 0) ? stat[1].stdout.trim() : null;
+			if(this.inetStatus === curInetStatus && this.appStatus === curAppStatus) {
+				return;
+			};
+			this.appStatus  = curAppStatus;
+			this.inetStatus = curInetStatus;
+			this.setInternetStatus();
+		}).catch(e => {
+			this.appStatus  = 'stoped';
+			this.inetStatus = null;
+		});
+	},
+
+	uiPoll: function() {
+		let curInetStatus  = null;
+		this.uiPollCounter = ++this.uiPollCounter;
+
+		if((this.uiPollState === 0 && this.uiPollCounter % this.uiCheckIntervalUp) ||
+			(this.uiPollState === 1 && this.uiPollCounter % this.uiCheckIntervalDown)) {
+			return;
+		};
+
+		this.uiPollCounter = 0;
+
+		return fs.exec(this.execPath, [ 'inet-status' ]).then(res => {
+			this.uiPollState = (res.code === 0 && res.stdout.trim() === 'up') ? 0 : 1;
+
+			if(this.uiPollState === 0) {
+				curInetStatus = 'up';
+			} else {
+				curInetStatus = 'down';
+			};
+
+			if(this.inetStatus !== curInetStatus) {
+				this.inetStatus = (this.currentAppMode === '0') ? null : curInetStatus;
+				this.setInternetStatus();
+			};
+		});
+	},
+
 	serviceRestart: function(ev) {
 		poll.stop();
 		return this.handleServiceAction('restart').then(() => {
@@ -184,7 +268,7 @@ return view.extend({
 		},
 
 		renderWidget: function(section_id, option_index, cfgvalue) {
-			this.ctx.setInternetStatus(true);
+			this.ctx.setInternetStatus();
 
 			return E([
 				E('label', { 'class': 'cbi-value-title' },
@@ -192,14 +276,14 @@ return view.extend({
 				),
 				E('div', { 'class': 'cbi-value-field' }, [
 					this.ctx.inetStatusLabel,
-					(!this.ctx.inetStatus) ? this.ctx.inetStatusSpinner : '',
+					this.ctx.inetStatusSpinner
 				]),
 			])
 		},
 	}),
 
 	CBIBlockServiceStatus: form.Value.extend({
-		__name__ : 'CBI.BlockServiceStatuse',
+		__name__ : 'CBI.BlockServiceStatus',
 
 		__init__ : function(map, section, ctx) {
 			this.map      = map;
@@ -365,80 +449,6 @@ return view.extend({
 		},
 	}),
 
-	setInternetStatus: function(initial=false) {
-		if(this.inetStatus === 'up') {
-			this.inetStatusLabel.style.background = '#46a546';
-			this.inetStatusLabel.textContent      = _('Connected');
-			this.inetStatusLabel.style.color      = '#ffffff';
-		}
-		else if(this.inetStatus === 'down') {
-			this.inetStatusLabel.textContent      = _('Disconnected');
-			this.inetStatusLabel.style.background = '#ff4953';
-			this.inetStatusLabel.style.color      = '#ffffff';
-		}
-		else {
-			this.inetStatusLabel.textContent      = _('Undefined');
-			this.inetStatusLabel.style.background = '#9b9b9b';
-			this.inetStatusLabel.style.color      = '#ffffff';
-		};
-
-		if(!initial && this.inetStatusSpinner) {
-			this.inetStatusSpinner.remove();
-		};
-
-		if(this.appStatus === 'running') {
-			this.serviceStatusLabel.textContent = _('Running');
-		} else {
-			this.serviceStatusLabel.textContent = _('Stopped');
-		};
-	},
-
-	servicePoll: function() {
-		return Promise.all([
-			fs.exec(this.execPath, [ 'status' ]),
-			fs.exec(this.execPath, [ 'inet-status' ]),
-		]).then(stat => {
-			let curAppStatus  = (stat[0].code === 0) ? stat[0].stdout.trim() : null;
-			let curInetStatus = (stat[1].code === 0) ? stat[1].stdout.trim() : null;
-			if(this.inetStatus === curInetStatus && this.appStatus === curAppStatus) {
-				return;
-			};
-			this.appStatus  = curAppStatus;
-			this.inetStatus = curInetStatus;
-			this.setInternetStatus();
-		}).catch(e => {
-			this.appStatus  = 'stoped';
-			this.inetStatus = null;
-		});
-	},
-
-	uiPoll: function() {
-		let curInetStatus  = null;
-		this.uiPollCounter = ++this.uiPollCounter;
-
-		if((this.uiPollState === 0 && this.uiPollCounter % this.uiCheckIntervalUp) ||
-			(this.uiPollState === 1 && this.uiPollCounter % this.uiCheckIntervalDown)) {
-			return;
-		};
-
-		this.uiPollCounter = 0;
-
-		return fs.exec(this.execPath, [ 'inet-status' ]).then(res => {
-			this.uiPollState = (res.code === 0 && res.stdout.trim() === 'up') ? 0 : 1;
-
-			if(this.uiPollState === 0) {
-				curInetStatus = 'up';
-			} else {
-				curInetStatus = 'down';
-			};
-
-			if(this.inetStatus !== curInetStatus) {
-				this.inetStatus = (this.currentAppMode === '0') ? null : curInetStatus;
-				this.setInternetStatus();
-			};
-		});
-	},
-
 	load: function() {
 		return Promise.all([
 			fs.exec(this.execPath, [ 'status' ]),
@@ -477,8 +487,8 @@ return view.extend({
 
 		/* Service widget */
 
-		s     = m.section(form.NamedSection, 'config', 'main');
-		o     = s.option(this.CBIBlockInetStatus, this);
+		s = m.section(form.NamedSection, 'config', 'main');
+		o = s.option(this.CBIBlockInetStatus, this);
 
 		if(this.currentAppMode === '2') {
 			o = s.option(this.CBIBlockServiceStatus, this);

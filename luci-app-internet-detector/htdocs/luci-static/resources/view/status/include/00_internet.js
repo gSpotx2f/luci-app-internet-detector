@@ -37,6 +37,7 @@ return baseclass.extend({
 				return;
 			};
 
+			window.internetDetectorCounter = 0;
 			return L.resolveDefault(fs.exec(this.execPath, [ 'inet-status' ]), null);
 		}
 		else {
@@ -65,14 +66,14 @@ return baseclass.extend({
 		let internetStatus = E('span', { 'class': 'label' });
 
 		if(window.internetDetectorState === 0) {
-			internetStatus.textContent       = _('Connected');
-			internetStatus.style.background  = '#46a546';
-			internetStatus.style.color       = '#ffffff';
+			internetStatus.textContent      = _('Connected');
+			internetStatus.style.background = '#46a546';
+			internetStatus.style.color      = '#ffffff';
 		}
 		else if(window.internetDetectorState === 1) {
-			internetStatus.textContent       = _('Disconnected');
-			internetStatus.style.background  = '#ff4953';
-			internetStatus.style.color       = '#ffffff';
+			internetStatus.textContent      = _('Disconnected');
+			internetStatus.style.background = '#ff4953';
+			internetStatus.style.color      = '#ffffff';
 		}
 		else {
 			internetStatus.textContent      = _('Undefined');
