@@ -162,7 +162,7 @@ msgstr "Интерфейс"
 msgid "Internet"
 msgstr "Интернет"
 
-msgid "Internet detector"
+msgid "Internet Detector"
 msgstr "Интернет-детектор"
 
 msgid "Internet detector mode"

@@ -481,7 +481,7 @@ return view.extend({
 
 		let s, o, ss;
 		let m = new form.Map(this.appName,
-			_('Internet detector'),
+			_('Internet Detector'),
 			_('Checking Internet availability.'));
 
 

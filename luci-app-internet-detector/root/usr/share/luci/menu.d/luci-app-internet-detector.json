@@ -1,6 +1,6 @@
 {
 	"admin/services/internet-detector": {
-		"title": "Internet detector",
+		"title": "Internet Detector",
 		"order": 80,
 		"action": {
 			"type": "view",

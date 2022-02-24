@@ -148,7 +148,7 @@ msgstr ""
 msgid "Internet"
 msgstr ""
 
-msgid "Internet detector"
+msgid "Internet Detector"
 msgstr ""
 
 msgid "Internet detector mode"
