@@ -88,9 +88,9 @@ return view.extend({
 	appStatus           : 'stoped',
 	initStatus          : null,
 	inetStatus          : null,
-	inetStatusLabel     : E('span', { 'class': 'label' }),
+	inetStatusLabel     : E('span', { 'class': 'label', 'id': 'inetStatusLabel' }),
  	inetStatusSpinner   : E('span', { 'style': 'margin-top:1em' }, ' '),
-	serviceStatusLabel  : E('em'),
+	serviceStatusLabel  : E('em', { 'id': 'serviceStatusLabel' }),
 	initButton          : null,
 	uiPollCounter       : 0,
 	uiPollState         : null,
@@ -271,7 +271,7 @@ return view.extend({
 			this.ctx.setInternetStatus();
 
 			return E([
-				E('label', { 'class': 'cbi-value-title' },
+				E('label', { 'class': 'cbi-value-title', 'for': 'inetStatusLabel' },
 					_('Internet status')
 				),
 				E('div', { 'class': 'cbi-value-field' }, [
@@ -295,7 +295,7 @@ return view.extend({
 
 		renderWidget: function(section_id, option_index, cfgvalue) {
 			return E([
-				E('label', { 'class': 'cbi-value-title' },
+				E('label', { 'class': 'cbi-value-title', 'for': 'serviceStatusLabel' },
 					_('Service')
 				),
 				E('div', { 'class': 'cbi-value-field' },
@@ -341,11 +341,15 @@ return view.extend({
 			}, (!this.ctx.initStatus) ? _('Disabled') : _('Enabled'));
 
 			return E( [
-				E('label', { 'class': 'cbi-value-title' },
+				E('label', { 'class': 'cbi-value-title', 'for': 'initButton' },
 					_('Run service at startup')
 				),
 				E('div', { 'class': 'cbi-value-field' },
-					this.ctx.initButton
+					E('div', {}, this.ctx.initButton),
+					E('input', {
+						'id'  : 'initButton',
+						'type': 'hidden',
+					}),
 				),
 			]);
 		},
