@@ -344,13 +344,13 @@ return view.extend({
 				E('label', { 'class': 'cbi-value-title', 'for': 'initButton' },
 					_('Run service at startup')
 				),
-				E('div', { 'class': 'cbi-value-field' },
+				E('div', { 'class': 'cbi-value-field' }, [
 					E('div', {}, this.ctx.initButton),
 					E('input', {
 						'id'  : 'initButton',
 						'type': 'hidden',
 					}),
-				),
+				]),
 			]);
 		},
 	}),
