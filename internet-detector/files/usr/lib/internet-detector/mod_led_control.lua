@@ -10,6 +10,7 @@ local Module = {
 	runInterval           = 5,
 	sysLedsDir            = "/sys/class/leds",
 	ledName               = nil,
+	status                = nil,
 	_enabled              = false,
 	_ledDir               = nil,
 	_ledMaxBrightnessFile = nil,

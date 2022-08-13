@@ -8,6 +8,20 @@ return baseclass.extend({
 	appName    : 'internet-detector',
 	execPath   : '/usr/bin/internet-detector',
 	inetStatus : null,
+	publicIp   : null,
+
+	inetStatusFromJson: function(res) {
+		let curInetStatus = null;
+		let curPubIp      = null;
+		if(res.code === 0) {
+			try {
+				let json          = JSON.parse(res.stdout.trim());
+				curInetStatus = json.inet;
+				curPubIp      = json.mod_public_ip;
+			} catch(e) {};
+		};
+		return [ curInetStatus, curPubIp ];
+	},
 
 	load: async function() {
 		if(!(
@@ -29,7 +43,6 @@ return baseclass.extend({
 			if(!('internetDetectorState' in window)) {
 				window.internetDetectorState = 2;
 			};
-
 			if(window.currentAppMode === '1' && (
 				(window.internetDetectorState === 0 && window.internetDetectorCounter % window.uiCheckIntervalUp) ||
 				(window.internetDetectorState === 1 && window.internetDetectorCounter % window.uiCheckIntervalDown)
@@ -38,7 +51,7 @@ return baseclass.extend({
 			};
 
 			window.internetDetectorCounter = 0;
-			return L.resolveDefault(fs.exec(this.execPath, [ 'inet-status' ]), null);
+			return L.resolveDefault(fs.exec(this.execPath, [ 'inet-status-json' ]), null);
 		}
 		else {
 			window.internetDetectorState = 2;
@@ -51,22 +64,13 @@ return baseclass.extend({
 		};
 
 		if(data) {
-			this.inetStatus = (data.code === 0) ? data.stdout.trim() : null;
-			if(this.inetStatus === 'up') {
-				window.internetDetectorState = 0;
-			}
-			else if(this.inetStatus === 'down') {
-				window.internetDetectorState = 1;
-			}
-			else {
-				window.internetDetectorState = 2;
-			};
+			[ window.internetDetectorState, this.publicIp ] = this.inetStatusFromJson(data);
 		};
 
 		let internetStatus = E('span', { 'class': 'label' });
 
 		if(window.internetDetectorState === 0) {
-			internetStatus.textContent      = _('Connected');
+			internetStatus.textContent      = _('Connected') + (this.publicIp ? ' | %s: %s'.format(_('Public IP'), _(this.publicIp)) : '');
 			internetStatus.style.background = '#46a546';
 			internetStatus.style.color      = '#ffffff';
 		}

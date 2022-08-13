@@ -11,6 +11,7 @@ local Module = {
 	alivePeriod         = 0,
 	upScript            = "",
 	downScript          = "",
+	status              = nil,
 	_deadCounter        = 0,
 	_aliveCounter       = 0,
 	_upScriptExecuted   = true,

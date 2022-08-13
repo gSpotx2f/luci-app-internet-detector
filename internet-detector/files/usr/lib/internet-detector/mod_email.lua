@@ -20,6 +20,7 @@ local Module = {
 	mailSmtp           = "smtp.gmail.com",
 	mailSmtpPort       = '587',
 	mailSecurity       = "tls",
+	status             = nil,
 	_enabled           = false,
 	_aliveCounter      = 0,
 	_msgSent           = true,

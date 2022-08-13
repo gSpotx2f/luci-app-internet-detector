@@ -132,6 +132,16 @@ local function readValueFromFile(filePath)
 	return retValue
 end
 
+local function statusJson(inet, t)
+	local lines = { [1] = string.format('"inet":%d', inet) }
+	if t then
+		for k, v in pairs(t) do
+			lines[#lines + 1] = string.format('"%s":"%s"', k, v)
+		end
+	end
+	return "{" .. table.concat(lines, ",") .. "}"
+end
+
 local function writeLogMessage(level, msg)
 	if Config.enableLogger then
 		nixio.syslog(level, msg)
@@ -203,7 +213,7 @@ local function TCPConnectionToHost(host, port)
 	if addrInfo then
 		local family = addrInfo[1].family
 		if family then
-			local socket  = nixio.socket(family, "stream")
+			local socket = nixio.socket(family, "stream")
 			socket:setopt("socket", "sndtimeo", Config.connectionTimeout)
 			socket:setopt("socket", "rcvtimeo", Config.connectionTimeout)
 			if Config.iface then
@@ -264,23 +274,22 @@ local function main()
 		if counter == 0 or counter >= interval then
 			currentStatus = checkHosts()
 			if not nixio.fs.access(Config.statusFile, "r") then
-				writeValueToFile(Config.statusFile, currentStatus)
+				writeValueToFile(Config.statusFile, statusJson(currentStatus))
 			end
 
 			if currentStatus == 0 then
 				interval = Config.intervalUp
 				if lastStatus ~= nil and currentStatus ~= lastStatus then
-					writeValueToFile(Config.statusFile, currentStatus)
+					writeValueToFile(Config.statusFile, statusJson(currentStatus))
 					writeLogMessage("notice", "Internet connected")
 				end
 			else
 				interval = Config.intervalDown
 				if lastStatus ~= nil and currentStatus ~= lastStatus then
-					writeValueToFile(Config.statusFile, currentStatus)
+					writeValueToFile(Config.statusFile, statusJson(currentStatus))
 					writeLogMessage("notice", "Internet disconnected")
 				end
 			end
-
 			counter = 0
 		end
 
@@ -295,6 +304,17 @@ local function main()
 			lastTime = timeNow
 			e:run(currentStatus, lastStatus, timeDiff)
 		end
+
+		local modulesStatus = {}
+		for k, v in ipairs(Config.modules) do
+			if v.status ~= nil then
+				modulesStatus[v.name] = v.status
+			end
+		end
+		if next(modulesStatus) then
+			writeValueToFile(Config.statusFile, statusJson(currentStatus, modulesStatus))
+		end
+
 		lastStatus = currentStatus
 		nixio.nanosleep(1)
 		counter    = counter + 1
@@ -326,23 +346,28 @@ local function poll(attempts, timeout)
 		Config.connectionTimeout = timeout
 	end
 	if checkHosts() == 0 then
-		return "up"
+		return statusJson(0)
 	else
-		return "down"
+		return  statusJson(1)
 	end
 end
 
-local function inetStatus()
-	local inetStat = "down"
+local function inetStatus(json)
+	local inetStat = 1
 	if nixio.fs.access(Config.statusFile, "r") then
 		local inetStatVal = readValueFromFile(Config.statusFile)
-		if inetStatVal ~= nil and tonumber(inetStatVal) == 0 then
-			inetStat = "up"
-		end
+		inetStat = inetStatVal
 	elseif Config.mode == 1 then
 		inetStat = poll()
 	else
 		os.exit(126)
+	end
+	if not json then
+		local sVal = inetStat:match('"inet":[0-9]')
+		if sVal then
+			sVal = sVal:match("[0-9]")
+			inetStat = (tonumber(sVal) == 0) and "up" or "down"
+		end
 	end
 	return inetStat
 end
@@ -489,7 +514,7 @@ parseHosts()
 
 local function help()
 	return string.format(
-		"Usage: %s [start|stop|restart|no-daemon|debug|status|inet-status|poll [<attempts num>] [<timeout sec>]|--help]",
+		"Usage: %s [start|stop|restart|no-daemon|debug|status|inet-status|inet-status-json|poll [<attempts num>] [<timeout sec>]|--help]",
 		arg[0]
 	)
 end
@@ -509,6 +534,8 @@ elseif arg[1] == "status" then
 	print(status())
 elseif arg[1] == "inet-status" then
 	print(inetStatus())
+elseif arg[1] == "inet-status-json" then
+	print(inetStatus(true))
 elseif arg[1] == "poll" then
 	local attempts, timeout
 	if arg[2] and arg[2]:match("[0-9]+") then

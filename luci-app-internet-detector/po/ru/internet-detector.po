@@ -47,6 +47,9 @@ msgstr "Тип проверки"
 msgid "Checking Internet availability."
 msgstr "Проверка доступности Интернет."
 
+msgid "Checking the real public IP address."
+msgstr "Проверка реального публичного IP адреса."
+
 msgid "Command failed"
 msgstr "Команда не выполнена"
 
@@ -89,6 +92,9 @@ msgstr "Отключен"
 msgid "Dismiss"
 msgstr "Закрыть"
 
+msgid "DNS provider"
+msgstr "DNS провайдер"
+
 msgid "Edit"
 msgstr "Изменить"
 
@@ -118,6 +124,12 @@ msgstr "Включен"
 
 msgid "Expecting:"
 msgstr "Ожидается:"
+
+msgid "Public IP"
+msgstr "Публичный IP"
+
+msgid "Public IP address"
+msgstr "Публичный IP адрес"
 
 msgid "Failed to get %s init status: %s"
 msgstr "Не удалось получить статус инициализации %s: %s"
@@ -170,6 +182,9 @@ msgstr "Режим интернет-детектора"
 
 msgid "Internet status"
 msgstr "Статус Интернет"
+
+msgid "Interval between IP address requests."
+msgstr "Интервал между запросами IP адреса."
 
 msgid "Jumbo: 9000 bytes"
 msgstr "Гигантский: 9000 байт"
@@ -286,6 +301,9 @@ msgstr "Пинг хоста"
 msgid "Ping packet size"
 msgstr "Размер пакета Ping"
 
+msgid "Polling interval"
+msgstr "Интервал опроса"
+
 msgid "Reboot device"
 msgstr "Перезагрузка устройства"
 
@@ -334,6 +352,9 @@ msgstr "Безопасность"
 msgid "Sender"
 msgstr "Отправитель"
 
+msgid "Server response timeout"
+msgstr "Таймаут ответа сервера"
+
 msgid "Service"
 msgstr "Служба"
 
@@ -342,6 +363,9 @@ msgstr "Не удалось выполнить действие службы \"%
 
 msgid "Service configuration"
 msgstr "Конфигурация службы"
+
+msgid "Service for determining the public IP address through DNS."
+msgstr "Сервис для определения публичного IP адреса через DNS."
 
 msgid "Service modules"
 msgstr "Модули службы"

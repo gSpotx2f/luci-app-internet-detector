@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=internet-detector
-PKG_VERSION:=0.5
+PKG_VERSION:=0.6
 PKG_RELEASE:=0
 PKG_MAINTAINER:=gSpot <https://github.com/gSpotx2f/luci-app-internet-detector>
 
@@ -48,6 +48,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_BIN) ./files/usr/bin/internet-detector $(1)/usr/bin/internet-detector
 	$(INSTALL_DIR) $(1)/usr/lib/internet-detector
 	$(INSTALL_DATA) ./files/usr/lib/internet-detector/mod_email.lua $(1)/usr/lib/internet-detector/mod_email.lua
+	$(INSTALL_DATA) ./files/usr/lib/internet-detector/mod_public_ip.lua $(1)/usr/lib/internet-detector/mod_public_ip.lua
 	$(INSTALL_DATA) ./files/usr/lib/internet-detector/mod_led_control.lua $(1)/usr/lib/internet-detector/mod_led_control.lua
 	$(INSTALL_DATA) ./files/usr/lib/internet-detector/mod_modem_restart.lua $(1)/usr/lib/internet-detector/mod_modem_restart.lua
 	$(INSTALL_DATA) ./files/usr/lib/internet-detector/mod_network_restart.lua $(1)/usr/lib/internet-detector/mod_network_restart.lua

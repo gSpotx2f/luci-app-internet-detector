@@ -33,6 +33,12 @@ config module 'mod_modem_restart'
 	option dead_period '600'
 	option any_band '0'
 
+config module 'mod_public_ip'
+	option enabled '0'
+	option provider 'opendns1'
+	option interval '600'
+	option timeout '3'
+
 config module 'mod_email'
 	option enabled '0'
 	option alive_period '0'

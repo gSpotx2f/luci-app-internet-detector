@@ -11,6 +11,7 @@ local Module = {
 	attempts         = 0,
 	deadPeriod       = 0,
 	restartTimeout   = 0,
+	status           = nil,
 	_attemptsCounter = 0,
 	_deadCounter     = 0,
 }

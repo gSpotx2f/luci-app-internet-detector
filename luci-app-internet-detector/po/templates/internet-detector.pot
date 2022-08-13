@@ -35,6 +35,9 @@ msgstr ""
 msgid "Checking Internet availability."
 msgstr ""
 
+msgid "Checking the real public IP address."
+msgstr ""
+
 msgid "Command failed"
 msgstr ""
 
@@ -77,6 +80,9 @@ msgstr ""
 msgid "Dismiss"
 msgstr ""
 
+msgid "DNS provider"
+msgstr ""
+
 msgid "Edit"
 msgstr ""
 
@@ -105,6 +111,12 @@ msgid "Enabled"
 msgstr ""
 
 msgid "Expecting:"
+msgstr ""
+
+msgid "Public IP"
+msgstr ""
+
+msgid "Public IP address"
 msgstr ""
 
 msgid "Failed to get %s init status: %s"
@@ -155,6 +167,9 @@ msgid "Internet detector mode"
 msgstr ""
 
 msgid "Internet status"
+msgstr ""
+
+msgid "Interval between IP address requests."
 msgstr ""
 
 msgid "Jumbo: 9000 bytes"
@@ -254,6 +269,9 @@ msgstr ""
 msgid "Ping packet size"
 msgstr ""
 
+msgid "Polling interval"
+msgstr ""
+
 msgid "Reboot device"
 msgstr ""
 
@@ -302,6 +320,9 @@ msgstr ""
 msgid "Sender"
 msgstr ""
 
+msgid "Server response timeout"
+msgstr ""
+
 msgid "Service"
 msgstr ""
 
@@ -309,6 +330,9 @@ msgid "Service action failed \"%s %s\": %s"
 msgstr ""
 
 msgid "Service configuration"
+msgstr ""
+
+msgid "Service for determining the public IP address through DNS."
 msgstr ""
 
 msgid "Service modules"

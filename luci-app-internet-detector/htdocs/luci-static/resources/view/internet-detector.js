@@ -88,6 +88,7 @@ return view.extend({
 	appStatus           : 'stoped',
 	initStatus          : null,
 	inetStatus          : null,
+	publicIp            : null,
 	inetStatusLabel     : E('span', { 'class': 'label', 'id': 'inetStatusLabel' }),
  	inetStatusSpinner   : E('span', { 'style': 'margin-top:1em' }, ' '),
 	serviceStatusLabel  : E('em', { 'id': 'serviceStatusLabel' }),
@@ -149,13 +150,13 @@ return view.extend({
 	},
 
 	setInternetStatus: function() {
-		if(this.inetStatus === 'up') {
+		if(this.inetStatus === 0) {
 			this.inetStatusLabel.style.background = '#46a546';
-			this.inetStatusLabel.textContent      = _('Connected');
+			this.inetStatusLabel.textContent      = _('Connected') + (this.publicIp ? ' | %s: %s'.format(_('Public IP'), _(this.publicIp)) : '');
 			this.inetStatusLabel.style.color      = '#ffffff';
 			this.unsetInetStatusSpinner();
 		}
-		else if(this.inetStatus === 'down') {
+		else if(this.inetStatus === 1) {
 			this.inetStatusLabel.textContent      = _('Disconnected');
 			this.inetStatusLabel.style.background = '#ff4953';
 			this.inetStatusLabel.style.color      = '#ffffff';
@@ -178,29 +179,43 @@ return view.extend({
 		};
 	},
 
+	inetStatusFromJson: function(res) {
+		let curInetStatus = null;
+		let curPubIp      = null;
+		if(res.code === 0) {
+			try {
+				let json      = JSON.parse(res.stdout.trim());
+				curInetStatus = json.inet;
+				curPubIp      = json.mod_public_ip;
+			} catch(e) {};
+		};
+		return [ curInetStatus, curPubIp ];
+	},
+
 	servicePoll: function() {
 		return Promise.all([
 			fs.exec(this.execPath, [ 'status' ]),
-			fs.exec(this.execPath, [ 'inet-status' ]),
+			fs.exec(this.execPath, [ 'inet-status-json' ]),
 		]).then(stat => {
 			let curAppStatus  = (stat[0].code === 0) ? stat[0].stdout.trim() : null;
-			let curInetStatus = (stat[1].code === 0) ? stat[1].stdout.trim() : null;
-			if(this.inetStatus === curInetStatus && this.appStatus === curAppStatus) {
+			let [ curInetStatus, curPubIp ] = this.inetStatusFromJson(stat[1]);
+			if(this.inetStatus === curInetStatus && this.appStatus === curAppStatus && this.publicIp === curPubIp) {
 				return;
 			};
 			this.appStatus  = curAppStatus;
 			this.inetStatus = curInetStatus;
+			this.publicIp   = curPubIp;
 			this.setInternetStatus();
 		}).catch(e => {
 			this.appStatus  = 'stoped';
 			this.inetStatus = null;
+			this.publicIp   = null
 		});
 	},
 
 	uiPoll: function() {
 		let curInetStatus  = null;
 		this.uiPollCounter = ++this.uiPollCounter;
-
 		if((this.uiPollState === 0 && this.uiPollCounter % this.uiCheckIntervalUp) ||
 			(this.uiPollState === 1 && this.uiPollCounter % this.uiCheckIntervalDown)) {
 			return;
@@ -208,17 +223,12 @@ return view.extend({
 
 		this.uiPollCounter = 0;
 
-		return fs.exec(this.execPath, [ 'inet-status' ]).then(res => {
-			this.uiPollState = (res.code === 0 && res.stdout.trim() === 'up') ? 0 : 1;
-
-			if(this.uiPollState === 0) {
-				curInetStatus = 'up';
-			} else {
-				curInetStatus = 'down';
-			};
-
-			if(this.inetStatus !== curInetStatus) {
-				this.inetStatus = (this.currentAppMode === '0') ? null : curInetStatus;
+		return fs.exec(this.execPath, [ 'inet-status-json' ]).then(res => {
+			let curPubIp;
+			[ this.uiPollState, curPubIp ] = this.inetStatusFromJson(res);
+			if(this.inetStatus !== this.uiPollState || this.publicIp !== curPubIp) {
+				this.inetStatus = (this.currentAppMode === '0') ? null : this.uiPollState;
+				this.publicIp = (this.currentAppMode === '0') ? null : curPubIp;
 				this.setInternetStatus();
 			};
 		});
@@ -873,6 +883,58 @@ return view.extend({
 			o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
 				_('ModemManager is not available...') +
 				'</em></div>';
+		};
+
+		// Public IP address
+
+		s.tab('public_ip', _('Public IP address'));
+
+		o = s.taboption('public_ip', form.DummyValue, '_dummy');
+			o.rawhtml = true;
+			o.default = '<div class="cbi-section-descr">' +
+				_('Checking the real public IP address.') +
+				'</div>';
+
+		o = s.taboption('public_ip', form.SectionValue, 'mod_public_ip', form.NamedSection,
+			'mod_public_ip', 'mod_public_ip'
+		);
+		ss = o.subsection;
+
+		// enabled
+		o = ss.option(form.Flag, 'enabled',
+			_('Enable'));
+		o.rmempty = false;
+
+		// provider
+		o = ss.option(form.ListValue,
+			'provider', _('DNS provider'),
+			_('Service for determining the public IP address through DNS.')
+		);
+		o.value('opendns1');
+		o.value('opendns2');
+		o.value('opendns3');
+		o.value('opendns4');
+		o.value('akamai');
+		o.value('google');
+
+		// interval
+		o = ss.option(form.ListValue,
+			'interval', _('Polling interval'),
+			_('Interval between IP address requests.')
+		);
+		o.value(60,    '1' + ' ' + _('min'));
+		o.value(300,   '5' + ' ' + _('min'));
+		o.value(600,   '10' + ' ' + _('min'));
+		o.value(1800,  '30' + ' ' + _('min'));
+		o.value(3600,  '1' + ' ' + _('hour'));
+		o.value(10800, '3' + ' ' + _('hour'));
+
+		// timeout
+		o = ss.option(form.ListValue,
+			'timeout', _('Server response timeout')
+		);
+		for(let i=1; i<=5; i++) {
+			o.value(i, i + ' ' + _('sec'));
 		};
 
 		// Email notification

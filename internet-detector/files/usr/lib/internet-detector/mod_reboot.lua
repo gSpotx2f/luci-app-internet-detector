@@ -9,6 +9,7 @@ local Module = {
 	readValue        = function(filePath) return nil end,
 	deadPeriod       = 0,
 	forceRebootDelay = 0,
+	status           = nil,
 	_deadCounter     = 0,
 }
 

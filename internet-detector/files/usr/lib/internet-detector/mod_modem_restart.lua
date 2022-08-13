@@ -15,6 +15,7 @@ local Module = {
 	deadPeriod   = 0,
 	iface        = nil,
 	anyBand      = false,
+	status       = nil,
 	_enabled     = false,
 	_deadCounter = 0,
 	_restarted   = false,
