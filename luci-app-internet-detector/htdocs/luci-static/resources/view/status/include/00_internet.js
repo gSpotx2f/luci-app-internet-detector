@@ -71,18 +71,18 @@ return baseclass.extend({
 
 		if(window.internetDetectorState === 0) {
 			internetStatus.textContent      = _('Connected') + (this.publicIp ? ' | %s: %s'.format(_('Public IP'), _(this.publicIp)) : '');
-			internetStatus.style.background = '#46a546';
-			internetStatus.style.color      = '#ffffff';
+			internetStatus.style.background = '#2ea256';
+			internetStatus.style.color      = '#fff';
 		}
 		else if(window.internetDetectorState === 1) {
 			internetStatus.textContent      = _('Disconnected');
-			internetStatus.style.background = '#ff4953';
-			internetStatus.style.color      = '#ffffff';
+			internetStatus.style.background = '#ff4e54';
+			internetStatus.style.color      = '#fff';
 		}
 		else {
 			internetStatus.textContent      = _('Undefined');
-			internetStatus.style.background = '#9b9b9b';
-			internetStatus.style.color      = '#ffffff';
+			internetStatus.style.background = '#8a8a8a';
+			internetStatus.style.color      = '#fff';
 		};
 
 		return E('div', {

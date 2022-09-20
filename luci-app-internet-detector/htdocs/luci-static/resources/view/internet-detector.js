@@ -151,21 +151,21 @@ return view.extend({
 
 	setInternetStatus: function() {
 		if(this.inetStatus === 0) {
-			this.inetStatusLabel.style.background = '#46a546';
+			this.inetStatusLabel.style.background = '#2ea256';
 			this.inetStatusLabel.textContent      = _('Connected') + (this.publicIp ? ' | %s: %s'.format(_('Public IP'), _(this.publicIp)) : '');
-			this.inetStatusLabel.style.color      = '#ffffff';
+			this.inetStatusLabel.style.color      = '#fff';
 			this.unsetInetStatusSpinner();
 		}
 		else if(this.inetStatus === 1) {
 			this.inetStatusLabel.textContent      = _('Disconnected');
-			this.inetStatusLabel.style.background = '#ff4953';
-			this.inetStatusLabel.style.color      = '#ffffff';
+			this.inetStatusLabel.style.background = '#ff4e54';
+			this.inetStatusLabel.style.color      = '#fff';
 			this.unsetInetStatusSpinner();
 		}
 		else {
 			this.inetStatusLabel.textContent      = _('Undefined');
-			this.inetStatusLabel.style.background = '#9b9b9b';
-			this.inetStatusLabel.style.color      = '#ffffff';
+			this.inetStatusLabel.style.background = '#8a8a8a';
+			this.inetStatusLabel.style.color      = '#fff';
 
 			if(this.currentAppMode !== '0' && this.appStatus !== 'stoped') {
 				this.setInetStatusSpinner();
