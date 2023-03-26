@@ -3,6 +3,33 @@
 'require fs';
 'require uci';
 
+document.head.append(E('style', {'type': 'text/css'},
+`
+:root {
+	--app-id-font-color: #fff;
+	--app-id-connected-color: #2ea256;
+	--app-id-disconnected-color: #ff4e54;
+	--app-id-undefined-color: #8a8a8a;
+}
+:root[data-darkmode="true"] {
+	--app-id-connected-color: #005F20;
+	--app-id-disconnected-color: #a93734;
+	--app-id-undefined-color: #4d4d4d;
+}
+.id-connected {
+	background-color: var(--app-id-connected-color) !important;
+	color: var(--app-id-font-color) !important;
+}
+.id-disconnected {
+	background-color: var(--app-id-disconnected-color) !important;
+	color: var(--app-id-font-color) !important;
+}
+.id-undefined {
+	background-color: var(--app-id-undefined-color) !important;
+	color: var(--app-id-font-color) !important;
+}
+`));
+
 return baseclass.extend({
 	title      : _('Internet'),
 	appName    : 'internet-detector',
@@ -43,6 +70,7 @@ return baseclass.extend({
 			if(!('internetDetectorState' in window)) {
 				window.internetDetectorState = 2;
 			};
+
 			if(window.currentAppMode === '1' && (
 				(window.internetDetectorState === 0 && window.internetDetectorCounter % window.uiCheckIntervalUp) ||
 				(window.internetDetectorState === 1 && window.internetDetectorCounter % window.uiCheckIntervalDown)
@@ -71,18 +99,15 @@ return baseclass.extend({
 
 		if(window.internetDetectorState === 0) {
 			internetStatus.textContent      = _('Connected') + (this.publicIp ? ' | %s: %s'.format(_('Public IP'), _(this.publicIp)) : '');
-			internetStatus.style.background = '#2ea256';
-			internetStatus.style.color      = '#fff';
+			internetStatus.className = "label id-connected";
 		}
 		else if(window.internetDetectorState === 1) {
 			internetStatus.textContent      = _('Disconnected');
-			internetStatus.style.background = '#ff4e54';
-			internetStatus.style.color      = '#fff';
+			internetStatus.className = "label id-disconnected";
 		}
 		else {
 			internetStatus.textContent      = _('Undefined');
-			internetStatus.style.background = '#8a8a8a';
-			internetStatus.style.color      = '#fff';
+			internetStatus.className = "label id-undefined";
 		};
 
 		return E('div', {

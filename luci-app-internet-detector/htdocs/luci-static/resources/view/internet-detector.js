@@ -9,6 +9,33 @@
 'require view';
 'require tools.widgets as widgets'
 
+document.head.append(E('style', {'type': 'text/css'},
+`
+:root {
+	--app-id-font-color: #fff;
+	--app-id-connected-color: #2ea256;
+	--app-id-disconnected-color: #ff4e54;
+	--app-id-undefined-color: #8a8a8a;
+}
+:root[data-darkmode="true"] {
+	--app-id-connected-color: #005F20;
+	--app-id-disconnected-color: #a93734;
+	--app-id-undefined-color: #4d4d4d;
+}
+.id-connected {
+	background-color: var(--app-id-connected-color) !important;
+	color: var(--app-id-font-color) !important;
+}
+.id-disconnected {
+	background-color: var(--app-id-disconnected-color) !important;
+	color: var(--app-id-font-color) !important;
+}
+.id-undefined {
+	background-color: var(--app-id-undefined-color) !important;
+	color: var(--app-id-font-color) !important;
+}
+`));
+
 const btnStyleEnabled  = 'btn cbi-button-save';
 const btnStyleDisabled = 'btn cbi-button-reset';
 const btnStyleApply    = 'btn cbi-button-apply';
@@ -151,21 +178,18 @@ return view.extend({
 
 	setInternetStatus: function() {
 		if(this.inetStatus === 0) {
-			this.inetStatusLabel.style.background = '#2ea256';
 			this.inetStatusLabel.textContent      = _('Connected') + (this.publicIp ? ' | %s: %s'.format(_('Public IP'), _(this.publicIp)) : '');
-			this.inetStatusLabel.style.color      = '#fff';
+			this.inetStatusLabel.className = "label id-connected";
 			this.unsetInetStatusSpinner();
 		}
 		else if(this.inetStatus === 1) {
 			this.inetStatusLabel.textContent      = _('Disconnected');
-			this.inetStatusLabel.style.background = '#ff4e54';
-			this.inetStatusLabel.style.color      = '#fff';
+			this.inetStatusLabel.className = "label id-disconnected";
 			this.unsetInetStatusSpinner();
 		}
 		else {
 			this.inetStatusLabel.textContent      = _('Undefined');
-			this.inetStatusLabel.style.background = '#8a8a8a';
-			this.inetStatusLabel.style.color      = '#fff';
+			this.inetStatusLabel.className = "label id-undefined";
 
 			if(this.currentAppMode !== '0' && this.appStatus !== 'stoped') {
 				this.setInetStatusSpinner();
@@ -216,6 +240,7 @@ return view.extend({
 	uiPoll: function() {
 		let curInetStatus  = null;
 		this.uiPollCounter = ++this.uiPollCounter;
+
 		if((this.uiPollState === 0 && this.uiPollCounter % this.uiCheckIntervalUp) ||
 			(this.uiPollState === 1 && this.uiPollCounter % this.uiCheckIntervalDown)) {
 			return;

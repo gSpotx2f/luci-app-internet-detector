@@ -25,9 +25,9 @@ Internet-detector is an application for checking the availability of the Interne
     /etc/init.d/internet-detector start
     /etc/init.d/internet-detector enable
 
-    wget --no-check-certificate -O /tmp/luci-app-internet-detector_0.6-0_all.ipk https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-app-internet-detector_0.6-0_all.ipk
-    opkg install /tmp/luci-app-internet-detector_0.6-0_all.ipk
-    rm /tmp/luci-app-internet-detector_0.6-0_all.ipk
+    wget --no-check-certificate -O /tmp/luci-app-internet-detector_0.6-1_all.ipk https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-app-internet-detector_0.6-1_all.ipk
+    opkg install /tmp/luci-app-internet-detector_0.6-1_all.ipk
+    rm /tmp/luci-app-internet-detector_0.6-1_all.ipk
     /etc/init.d/rpcd restart
 
 Email notification:
@@ -36,9 +36,9 @@ Email notification:
 
 i18n-ru:
 
-    wget --no-check-certificate -O /tmp/luci-i18n-internet-detector-ru_0.6-0_all.ipk https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-i18n-internet-detector-ru_0.6-0_all.ipk
-    opkg install /tmp/luci-i18n-internet-detector-ru_0.6-0_all.ipk
-    rm /tmp/luci-i18n-internet-detector-ru_0.6-0_all.ipk
+    wget --no-check-certificate -O /tmp/luci-i18n-internet-detector-ru_0.6-1_all.ipk https://github.com/gSpotx2f/packages-openwrt/raw/master/current/luci-i18n-internet-detector-ru_0.6-1_all.ipk
+    opkg install /tmp/luci-i18n-internet-detector-ru_0.6-1_all.ipk
+    rm /tmp/luci-i18n-internet-detector-ru_0.6-1_all.ipk
 
 **[OpenWrt 19.07](https://github.com/gSpotx2f/luci-app-internet-detector/tree/19.07)**
 
