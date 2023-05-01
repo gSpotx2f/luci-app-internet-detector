@@ -41,5 +41,5 @@ i18n-ru:
 
 ## Screenshots:
 
-![](https://github.com/gSpotx2f/luci-app-internet-detector/blob/master/screenshots/01.jpg)
-![](https://github.com/gSpotx2f/luci-app-internet-detector/blob/master/screenshots/02.jpg)
+![](https://github.com/gSpotx2f/luci-app-internet-detector/blob/19.07/screenshots/01.jpg)
+![](https://github.com/gSpotx2f/luci-app-internet-detector/blob/19.07/screenshots/02.jpg)
