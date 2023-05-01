@@ -2,7 +2,7 @@
 	Dependences:
 		modemmanager
 --]]
-local nixio  = require("nixio")
+local unistd = require("posix.unistd")
 
 local Module = {
 	name         = "mod_modem_restart",
@@ -50,11 +50,11 @@ function Module:init(t)
 	self.iface      = t.iface
 	self.anyBand    = (tonumber(t.any_band) ~= 0)
 
-	if not nixio.fs.access(self.mmcli, "x") then
+	if not unistd.access(self.mmcli, "x") then
 		self.anyBand = false
 	end
 
-	if nixio.fs.access(self.mmInit, "x") then
+	if unistd.access(self.mmInit, "x") then
 		self._enabled = true
 	else
 		self._enabled = false

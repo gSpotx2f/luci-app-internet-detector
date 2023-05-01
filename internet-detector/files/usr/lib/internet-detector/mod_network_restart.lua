@@ -1,5 +1,5 @@
 
-local nixio  = require("nixio")
+local unistd = require("posix.unistd")
 
 local Module = {
 	name             = "mod_network_restart",
@@ -22,9 +22,9 @@ end
 
 function Module:toggleDevice(flag)
 	local ip = "/sbin/ip"
-	if nixio.fs.access(ip, "x") then
-		return os.execute(
-			string.format("%s link set dev %s %s", ip, self.iface, (flag and "up" or "down"))
+	if unistd.access(ip, "x") then
+		return os.execute(string.format(
+			"%s link set dev %s %s", ip, self.iface, (flag and "up" or "down"))
 		)
 	end
 end
@@ -71,10 +71,11 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 					self.syslog("info", string.format(
 						"%s: restarting network interface '%s'", self.name, self.iface))
 					self:ifaceDown()
-					nixio.nanosleep(self.restartTimeout)
+					unistd.sleep(self.restartTimeout)
 					self:ifaceUp()
 				else
-					self.syslog("info", string.format("%s: restarting network", self.name))
+					self.syslog("info", string.format(
+						"%s: restarting network", self.name))
 					self:networkRestart()
 				end
 				self._deadCounter     = 0

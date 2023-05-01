@@ -1,5 +1,5 @@
 
-local nixio  = require("nixio")
+local unistd = require("posix.unistd")
 
 local Module = {
 	name                = "mod_user_scripts",
@@ -19,8 +19,8 @@ local Module = {
 }
 
 function Module:runExternalScript(scriptPath)
-	if nixio.fs.access(scriptPath, "x") then
-		os.execute(string.format('/bin/sh -c "%s" &', scriptPath))
+	if unistd.access(scriptPath, "r") then
+		os.execute(string.format('/bin/sh "%s" &', scriptPath))
 	end
 end
 
@@ -28,8 +28,10 @@ function Module:init(t)
 	self.deadPeriod  = tonumber(t.dead_period)
 	self.alivePeriod = tonumber(t.alive_period)
 	if self.config.configDir then
-		self.upScript   = string.format("%s/up-script", self.config.configDir)
-		self.downScript = string.format("%s/down-script", self.config.configDir)
+		self.upScript   = string.format(
+			"%s/up-script.%s", self.config.configDir, self.config.serviceConfig.instance)
+		self.downScript = string.format(
+			"%s/down-script.%s", self.config.configDir, self.config.serviceConfig.instance)
 	end
 end
 
@@ -37,7 +39,6 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 	if currentStatus == 1 then
 		self._aliveCounter       = 0
 		self._downScriptExecuted = false
-
 		if not self._upScriptExecuted then
 			if self._deadCounter >= self.deadPeriod then
 				self:runExternalScript(self.downScript)
@@ -49,7 +50,6 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 	else
 		self._deadCounter      = 0
 		self._upScriptExecuted = false
-
 		if not self._downScriptExecuted then
 			if self._aliveCounter >= self.alivePeriod then
 				self:runExternalScript(self.upScript)

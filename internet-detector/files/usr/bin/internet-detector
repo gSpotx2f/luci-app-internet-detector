@@ -5,112 +5,103 @@
 
 	Dependences:
 		lua
-		luci-lib-nixio
+		luaposix
 		libuci-lua
 
-	(с) 2021 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
+	(с) 2023 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
 --]]
-
--- Default settings
-
-local Config = {
-	mode                 = 2,
-	enableLogger         = true,
-	intervalUp           = 30,
-	intervalDown         = 5,
-	connectionAttempts   = 2,
-	connectionTimeout    = 2,
-	UIConnectionAttempts = 1,
-	UIConnectionTimeout  = 1,
-	hosts                = {
-		[1] = "8.8.8.8",
-		[2] = "1.1.1.1",
-	},
-	tcpPort              = 53,
-	pingPacketSize       = 56,
-	iface                = nil,
-	checkType            = 0,	-- 0: TCP, 1: ping
-	hostname             = "OpenWrt",
-	appName              = "internet-detector",
-	commonDir            = "/tmp/run",
-	debugLog             = "/tmp/internet-detector.debug",
-	pingCmd              = "/bin/ping",
-	pingParams           = "-c 1",
-	debug                = false,
-	modules              = {},
-	parsedHosts          = {},
-}
-Config.configDir  = string.format("/etc/%s", Config.appName)
-Config.modulesDir = string.format("/usr/lib/%s", Config.appName)
-Config.pidFile    = string.format("%s/%s.pid", Config.commonDir, Config.appName)
-Config.statusFile = string.format("%s/%s.status", Config.commonDir, Config.appName)
 
 -- Importing packages
 
-local function prequire(package)
+local dirent = require("posix.dirent")
+local fcntl  = require("posix.fcntl")
+local signal = require("posix.signal")
+local socket = require("posix.sys.socket")
+local stat   = require("posix.sys.stat")
+local syslog = require("posix.syslog")
+local time   = require("posix.time")
+local unistd = require("posix.unistd")
+local uci    = require("uci")
+
+-- Default settings
+
+local InternetDetector = {
+	mode          = 0,
+	enableLogger  = true,
+	hostname      = "OpenWrt",
+	appName       = "internet-detector",
+	commonDir     = "/tmp/run",
+	pingCmd       = "/bin/ping",
+	pingParams    = "-c 1",
+	debug         = false,
+	serviceConfig = {
+		hosts = {
+			[1] = "8.8.8.8",
+			[2] = "1.1.1.1",
+		},
+		check_type          = 0,	-- 0: TCP, 1: ICMP
+		tcp_port            = 53,
+		icmp_packet_size    = 56,
+		interval_up         = 30,
+		interval_down       = 5,
+		connection_attempts = 2,
+		connection_timeout  = 2,
+		iface               = nil,
+		instance            = nil,
+	},
+	modules      = {},
+	parsedHosts  = {},
+}
+InternetDetector.configDir  = string.format("/etc/%s", InternetDetector.appName)
+InternetDetector.modulesDir = string.format("/usr/lib/%s", InternetDetector.appName)
+
+-- Loading settings from UCI
+local uciCursor               = uci.cursor()
+InternetDetector.mode         = tonumber(
+	uciCursor:get(InternetDetector.appName, "config", "mode"))
+InternetDetector.enableLogger = (tonumber(
+	uciCursor:get(InternetDetector.appName, "config", "enable_logger")) ~= 0)
+local hostname                = uciCursor:get("system", "@[0]", "hostname")
+if hostname ~= nil then
+	InternetDetector.hostname = hostname
+end
+
+local RUNNING
+
+function InternetDetector:prequire(package)
 	local retVal, pkg = pcall(require, package)
 	return retVal and pkg
 end
 
-local nixio = prequire("nixio")
-if not nixio then
-	error("You need to install nixio...")
+function InternetDetector:loadUCIConfig(sType, instance)
+	local success
+	local num = 0
+	uciCursor:foreach(
+		self.appName,
+		sType,
+		function(s)
+			if s[".name"] == instance then
+				for k, v in pairs(s) do
+					if type(v) == "string" and v:match("^[%d]+$") then
+						v = tonumber(v)
+					end
+					self.serviceConfig[k] = v
+				end
+				success = true
+				self.serviceConfig.instanceNum = num
+			end
+			num = num + 1
+		end
+	)
+	self.serviceConfig.instance = instance
+	self.pidFile    = string.format(
+		"%s/%s.%s.pid", self.commonDir, self.appName, instance)
+	self.statusFile = string.format(
+		"%s/%s.%s.status", self.commonDir, self.appName, instance)
+	return success
 end
 
-local uci = prequire("uci")
-if not uci then
-	error("You need to install libuci-lua...")
-end
-
--- Loading settings from UCI
-
-local uciCursor             = uci.cursor()
-Config.mode                 = tonumber(uciCursor:get(
-                               Config.appName, "config", "mode"))
-Config.enableLogger         = (tonumber(uciCursor:get(
-                               Config.appName, "config", "service_enable_logger")) ~= 0)
-Config.intervalUp           = tonumber(uciCursor:get(
-                               Config.appName, "config", "service_interval_up"))
-Config.intervalDown         = tonumber(uciCursor:get(
-                               Config.appName, "config", "service_interval_down"))
-Config.connectionAttempts   = tonumber(uciCursor:get(
-                               Config.appName, "config", "service_connection_attempts"))
-Config.connectionTimeout    = tonumber(uciCursor:get(
-                               Config.appName, "config", "service_connection_timeout"))
-Config.UIConnectionAttempts = tonumber(uciCursor:get(
-                               Config.appName, "config", "ui_connection_attempts"))
-Config.UIConnectionTimeout  = tonumber(uciCursor:get(
-                               Config.appName, "config", "ui_connection_timeout"))
-Config.hosts                = uciCursor:get(Config.appName, "config", "hosts")
-
-local tcpPort               = uciCursor:get(
-                               Config.appName, "config", "tcp_port")
-if tcpPort ~= nil then
-	Config.tcpPort = tonumber(tcpPort)
-end
-
-local pingPacketSize        = uciCursor:get(
-                               Config.appName, "config", "ping_packet_size")
-if pingPacketSize ~= nil then
-	Config.pingPacketSize = tonumber(pingPacketSize)
-end
-
-local iface                 = uciCursor:get(
-                               Config.appName, "config", "iface")
-if iface ~= nil then
-	Config.iface = iface
-end
-
-Config.checkType            = tonumber(uciCursor:get(
-                               Config.appName, "config", "check_type"))
-
-local hostname              = uciCursor:get("system", "@[0]", "hostname")
-if hostname ~= nil then
-	Config.hostname = hostname
-end
-
-
-local function writeValueToFile(filePath, str)
+function InternetDetector:writeValueToFile(filePath, str)
 	local retValue = false
 	local fh       = io.open(filePath, "w")
 	if fh then
@@ -122,7 +113,7 @@ local function writeValueToFile(filePath, str)
 	return retValue
 end
 
-local function readValueFromFile(filePath)
+function InternetDetector:readValueFromFile(filePath)
 	local retValue
 	local fh = io.open(filePath, "r")
 	if fh then
@@ -132,72 +123,97 @@ local function readValueFromFile(filePath)
 	return retValue
 end
 
-local function statusJson(inet, t)
-	local lines = { [1] = string.format('"inet":%d', inet) }
+function InternetDetector:statusJson(inet, instance, t)
+	local lines = { [1] = string.format(
+		'{"instance":"%s","num":"%d","inet":%d',
+		instance,
+		self.serviceConfig.instanceNum,
+		inet)}
 	if t then
 		for k, v in pairs(t) do
 			lines[#lines + 1] = string.format('"%s":"%s"', k, v)
 		end
 	end
-	return "{" .. table.concat(lines, ",") .. "}"
+	return table.concat(lines, ",") .. "}"
 end
 
-local function writeLogMessage(level, msg)
-	if Config.enableLogger then
-		nixio.syslog(level, msg)
+function InternetDetector:writeLogMessage(level, msg)
+	if self.enableLogger then
+		local levels = {
+			emerg   = syslog.LOG_EMERG,
+			alert   = syslog.LOG_ALERT,
+			crit    = syslog.LOG_CRIT,
+			err     = syslog.LOG_ERR,
+			warning = syslog.LOG_WARNING,
+			notice  = syslog.LOG_NOTICE,
+			info    = syslog.LOG_INFO,
+			debug   = syslog.LOG_DEBUG,
+		}
+		syslog.syslog(levels[level] or syslog.LOG_INFO, string.format(
+			"%s: %s", self.serviceConfig.instance or "", msg))
 	end
 end
 
-local function loadModules()
-	package.path   = string.format("%s;%s/?.lua", package.path, Config.modulesDir)
-	Config.modules = {}
-	uciCursor:foreach(
-		Config.appName,
-		"module",
-		function(s)
-			local mod_name = s[".name"]
-			if mod_name and s.enabled == "1" then
-				local m = prequire(mod_name)
-				if m then
-					m.config     = Config
-					m.syslog     = writeLogMessage
-					m.writeValue = writeValueToFile
-					m.readValue  = readValueFromFile
-					m:init(s)
-					Config.modules[#Config.modules + 1] = m
+function InternetDetector:loadModules()
+	package.path = string.format("%s;%s/?.lua", package.path, self.modulesDir)
+	self.modules = {}
+	local ok, modulesDir = pcall(dirent.files, self.modulesDir)
+	if ok then
+		for item in modulesDir do
+			if item:match("^mod_") then
+				local modName   = item:gsub("%.lua$", "")
+				local modConfig = {}
+				for k, v in pairs(self.serviceConfig) do
+					if k:match("^" .. modName) then
+						modConfig[k:gsub("^" .. modName .. "_", "")] = v
+					end
+				end
+				if modConfig.enabled == 1 then
+					local m = self:prequire(modName)
+					if m then
+						m.config     = self
+						m.syslog     = function(level, msg) self:writeLogMessage(level, msg) end
+						m.writeValue = function(filePath, str) return self:writeValueToFile(filePath, str) end
+						m.readValue  = function(filePath) return self:readValueFromFile(filePath) end
+						m:init(modConfig)
+						self.modules[#self.modules + 1] = m
+					end
 				end
 			end
 		end
-	)
-end
-
-local function parseHost(host)
-	local addr, port = host:match("^([^:]+):?(%d*)")
-	return addr, tonumber(port) or false
-end
-
-local function parseHosts()
-	Config.parsedHosts = {}
-	for k, v in ipairs(Config.hosts) do
-		local addr, port = parseHost(v)
-		Config.parsedHosts[k] = { addr = addr, port = port }
 	end
 end
 
-local function pingHost(host)
+function InternetDetector:parseHost(host)
+	local addr, port = host:match("^([^%[%]:]+):?(%d?%d?%d?%d?%d?)$")
+	if not addr then
+		addr, port = host:match("^%[?([^%[%]]+)%]?:?(%d?%d?%d?%d?%d?)$")
+	end
+	return addr, tonumber(port)
+end
+
+function InternetDetector:parseHosts()
+	self.parsedHosts = {}
+	for k, v in ipairs(self.serviceConfig.hosts) do
+		local addr, port    = self:parseHost(v)
+		self.parsedHosts[k] = { addr = addr, port = port }
+	end
+end
+
+function InternetDetector:pingHost(host)
 	local ping = string.format(
 		"%s %s -W %d -s %d%s %s > /dev/null 2>&1",
-		Config.pingCmd,
-		Config.pingParams,
-		Config.connectionTimeout,
-		Config.pingPacketSize,
-		Config.iface and (" -I " .. Config.iface) or "",
+		self.pingCmd,
+		self.pingParams,
+		self.serviceConfig.connection_timeout,
+		self.serviceConfig.icmp_packet_size,
+		self.serviceConfig.iface and (" -I " .. self.serviceConfig.iface) or "",
 		host
 	)
 	local retCode = os.execute(ping)
 
 	-- Debug
-	if Config.debug then
+	if self.debug then
 		io.stdout:write(string.format(
 			"--- Ping ---\ntime = %s\n%s\nretCode = %s\n", os.time(), ping, retCode)
 		)
@@ -207,53 +223,94 @@ local function pingHost(host)
 	return retCode
 end
 
-local function TCPConnectionToHost(host, port)
-	local retCode  = 1
-	local addrInfo = nixio.getaddrinfo(host, "any")
-	if addrInfo then
-		local family = addrInfo[1].family
-		if family then
-			local socket = nixio.socket(family, "stream")
-			socket:setopt("socket", "sndtimeo", Config.connectionTimeout)
-			socket:setopt("socket", "rcvtimeo", Config.connectionTimeout)
-			if Config.iface then
-				socket:setopt("socket", "bindtodevice", Config.iface)
-			end
-			local success = socket:connect(host, port or Config.tcpPort)
+function InternetDetector:TCPConnectionToHost(host, port)
+	local retCode = 1
+	local saTable, errMsg, errNum = socket.getaddrinfo(host, port or self.serviceConfig.tcp_port)
 
-			-- Debug
-			if Config.debug then
-				local sockAddr, sockPort = socket:getsockname()
-				local peerAddr, peerPort = socket:getpeername()
+	if not saTable then
+		if self.debug then
+			io.stdout:write(string.format(
+				"GETADDRINFO ERROR: %s, %s\n", errMsg, errNum))
+		end
+	else
+		local family = saTable[1].family
+
+		if family then
+			local sock, errMsg, errNum = socket.socket(family, socket.SOCK_STREAM, 0)
+
+			if not sock then
+				if self.debug then
+					io.stdout:write(string.format(
+						"SOCKET ERROR: %s, %s\n", errMsg, errNum))
+				end
+				return retCode
+			end
+
+			socket.setsockopt(sock, socket.SOL_SOCKET,
+				socket.SO_SNDTIMEO, self.serviceConfig.connection_timeout, 0)
+			socket.setsockopt(sock, socket.SOL_SOCKET,
+				socket.SO_RCVTIMEO, self.serviceConfig.connection_timeout, 0)
+
+			if self.serviceConfig.iface then
+				local ok, errMsg, errNum = socket.setsockopt(sock, socket.SOL_SOCKET,
+					socket.SO_BINDTODEVICE, self.serviceConfig.iface)
+				if not ok then
+					if self.debug then
+						io.stdout:write(string.format(
+							"SOCKET ERROR: %s, %s\n", errMsg, errNum))
+					end
+					return retCode
+				end
+			end
+
+			local success = socket.connect(sock, saTable[1])
+
+			if self.debug then
+				if not success then
+					io.stdout:write(string.format(
+						"SOCKET CONNECT ERROR: %s\n", tostring(success)))
+				end
+				local sockTable, err_s, e_s = socket.getsockname(sock)
+				local peerTable, err_p, e_p = socket.getpeername(sock)
+				if not sockTable then
+					sockTable = {}
+					io.stdout:write(
+						string.format("SOCKET ERROR: %s, %s\n", err_s, e_s))
+				end
+				if not peerTable then
+					peerTable = {}
+					io.stdout:write(
+						string.format("SOCKET ERROR: %s, %s\n", err_p, e_p))
+				end
 				io.stdout:write(string.format(
-					"--- TCP ---\ntime = %s\nconnectionTimeout = %s\niface = %s\nhost:port = %s:%s\nsockname = %s:%s\npeername = %s:%s\nsuccess = %s\n",
+					"--- TCP ---\ntime = %s\nconnection_timeout = %s\niface = %s\nhost:port = [%s]:%s\nsockname = [%s]:%s\npeername = [%s]:%s\nsuccess = %s\n",
 					os.time(),
-					Config.connectionTimeout,
-					tostring(Config.iface),
+					self.serviceConfig.connection_timeout,
+					tostring(self.serviceConfig.iface),
 					host,
-					port or Config.tcpPort,
-					tostring(sockAddr),
-					tostring(sockPort),
-					tostring(peerAddr),
-					tostring(peerPort),
+					port or self.serviceConfig.tcp_port,
+					tostring(sockTable.addr),
+					tostring(sockTable.port),
+					tostring(peerTable.addr),
+					tostring(peerTable.port),
 					tostring(success))
 				)
 				io.stdout:flush()
 			end
 
-			socket:close()
+			unistd.close(sock)
 			retCode = success and 0 or 1
 		end
 	end
 	return retCode
 end
 
-local function checkHosts()
-	local checkFunc = (Config.checkType == 1) and pingHost or TCPConnectionToHost
+function InternetDetector:checkHosts()
+	local checkFunc = (self.serviceConfig.check_type == 1) and self.pingHost or self.TCPConnectionToHost
 	local retCode   = 1
-	for k, v in ipairs(Config.parsedHosts) do
-		for i = 1, Config.connectionAttempts do
-			if checkFunc(v.addr, v.port) == 0 then
+	for k, v in ipairs(self.parsedHosts) do
+		for i = 1, self.serviceConfig.connection_attempts do
+			if checkFunc(self, v.addr, v.port) == 0 then
 				retCode = 0
 				break
 			end
@@ -265,37 +322,51 @@ local function checkHosts()
 	return retCode
 end
 
-local function main()
-	local lastStatus, currentStatus, timeNow, timeDiff, lastTime
-	local interval = Config.intervalUp
-	local counter  = 0
+function InternetDetector:breakMain(signo)
+	RUNNING = false
+end
 
-	while true do
+function InternetDetector:main()
+	signal.signal(signal.SIGTERM, function(signo) self:breakMain(signo) end)
+	signal.signal(signal.SIGINT, function(signo) self:breakMain(signo) end)
+	signal.signal(signal.SIGQUIT, function(signo) self:breakMain(signo) end)
+
+	local lastStatus, currentStatus, timeNow, timeDiff, lastTime
+	local interval = self.serviceConfig.interval_up
+	local counter  = 0
+	local onStart  = true
+	RUNNING        = true
+	while RUNNING do
 		if counter == 0 or counter >= interval then
-			currentStatus = checkHosts()
-			if not nixio.fs.access(Config.statusFile, "r") then
-				writeValueToFile(Config.statusFile, statusJson(currentStatus))
+			currentStatus = self:checkHosts()
+			if onStart or not stat.stat(self.statusFile) then
+				self:writeValueToFile(self.statusFile, self:statusJson(
+					currentStatus, self.serviceConfig.instance))
+				onStart = false
 			end
 
 			if currentStatus == 0 then
-				interval = Config.intervalUp
+				interval = self.serviceConfig.interval_up
 				if lastStatus ~= nil and currentStatus ~= lastStatus then
-					writeValueToFile(Config.statusFile, statusJson(currentStatus))
-					writeLogMessage("notice", "Internet connected")
+					self:writeValueToFile(self.statusFile, self:statusJson(
+						currentStatus, self.serviceConfig.instance))
+					self:writeLogMessage("notice", "Connected")
 				end
 			else
-				interval = Config.intervalDown
+				interval = self.serviceConfig.interval_down
 				if lastStatus ~= nil and currentStatus ~= lastStatus then
-					writeValueToFile(Config.statusFile, statusJson(currentStatus))
-					writeLogMessage("notice", "Internet disconnected")
+					self:writeValueToFile(self.statusFile, self:statusJson(
+						currentStatus, self.serviceConfig.instance))
+					self:writeLogMessage("notice", "Disconnected")
 				end
 			end
+
 			counter = 0
 		end
 
 		timeDiff = 0
-		for _, e in ipairs(Config.modules) do
-			timeNow = nixio.sysinfo().uptime
+		for _, e in ipairs(self.modules) do
+			timeNow = time.clock_gettime(time.CLOCK_MONOTONIC).tv_sec
 			if lastTime then
 				timeDiff = timeDiff + timeNow - lastTime
 			else
@@ -306,142 +377,156 @@ local function main()
 		end
 
 		local modulesStatus = {}
-		for k, v in ipairs(Config.modules) do
+		for k, v in ipairs(self.modules) do
 			if v.status ~= nil then
 				modulesStatus[v.name] = v.status
 			end
 		end
 		if next(modulesStatus) then
-			writeValueToFile(Config.statusFile, statusJson(currentStatus, modulesStatus))
+			self:writeValueToFile(self.statusFile, self:statusJson(
+				currentStatus, self.serviceConfig.instance, modulesStatus))
 		end
 
 		lastStatus = currentStatus
-		nixio.nanosleep(1)
+		unistd.sleep(1)
 		counter    = counter + 1
 	end
 end
 
-local function removeProcessFiles()
-	os.remove(Config.pidFile)
-	os.remove(Config.statusFile)
+function InternetDetector:removeProcessFiles()
+	os.remove(string.format(
+		"%s/%s.%s.pid", self.commonDir, self.appName, self.serviceConfig.instance))
+	os.remove(string.format(
+		"%s/%s.%s.status", self.commonDir, self.appName, self.serviceConfig.instance))
 end
 
-local function status()
-	if nixio.fs.access(Config.pidFile, "r") then
-		return "running"
-	else
-		return "stoped"
-	end
-end
-
-local function poll(attempts, timeout)
-	if Config.mode == 1 then
-		Config.connectionAttempts = Config.UIConnectionAttempts
-		Config.connectionTimeout  = Config.UIConnectionTimeout
-	end
-	if attempts then
-		Config.connectionAttempts = attempts
-	end
-	if timeout then
-		Config.connectionTimeout = timeout
-	end
-	if checkHosts() == 0 then
-		return statusJson(0)
-	else
-		return  statusJson(1)
-	end
-end
-
-local function inetStatus(json)
-	local inetStat = 1
-	if nixio.fs.access(Config.statusFile, "r") then
-		local inetStatVal = readValueFromFile(Config.statusFile)
-		inetStat = inetStatVal
-	elseif Config.mode == 1 then
-		inetStat = poll()
-	else
-		os.exit(126)
-	end
-	if not json then
-		local sVal = inetStat:match('"inet":[0-9]')
-		if sVal then
-			sVal = sVal:match("[0-9]")
-			inetStat = (tonumber(sVal) == 0) and "up" or "down"
+function InternetDetector:status()
+	local ok, commonDir = pcall(dirent.files, self.commonDir)
+	if ok then
+		local appName = self.appName:gsub("-", "%%-")
+		for item in commonDir do
+			if item:match("^" .. appName .. ".-%.pid$") then
+				return "running"
+			end
 		end
+	end
+	return "stoped"
+end
+
+function InternetDetector:poll()
+	local retCode = self:checkHosts()
+	return string.format('{"instances":[%s]}', self:statusJson(
+		retCode, self.serviceConfig.instance))
+end
+
+function InternetDetector:inetStatus()
+	local inetStat      = '{"instances":[]}'
+	local ok, commonDir = pcall(dirent.files, self.commonDir)
+	if ok then
+		local appName = self.appName:gsub("-", "%%-")
+		local lines   = {}
+		for item in commonDir do
+			if item:match("^" .. appName .. ".-%.status$") then
+				lines[#lines + 1] = self:readValueFromFile(
+					string.format("%s/%s", self.commonDir, item))
+			end
+		end
+		inetStat = '{"instances":[' .. table.concat(lines, ",") .. "]}"
 	end
 	return inetStat
 end
 
-local function stop()
-	local pidValue
-	if Config.enableLogger then
-		nixio.openlog(Config.appName)
-	end
-	if nixio.fs.access(Config.pidFile, "r") then
-		pidValue = readValueFromFile(Config.pidFile)
+function InternetDetector:stopInstance(pidFile)
+	local retVal
+	if stat.stat(pidFile) then
+		pidValue = self:readValueFromFile(pidFile)
 		if pidValue then
-			local success
+			local ok, errMsg, errNum
 			for i = 0, 10 do
-				success = nixio.kill(tonumber(pidValue), 15)
-				if success then
+				ok, errMsg, errNum = signal.kill(tonumber(pidValue), signal.SIGTERM)
+				if ok then
 					break
 				end
 			end
-			if not success then
-				io.stderr:write(string.format('No such process: "%s"\n', pidValue))
+			if not ok then
+				io.stderr:write(string.format(
+					'Process stop error: %s (%s). PID: "%s"\n', errMsg, errNum, pidValue))
 			end
-			writeLogMessage("info", string.format("[%s] stoped", pidValue))
-			removeProcessFiles()
+			if errNum == 3 then
+				os.remove(pidFile)
+			end
+			retVal = true
 		end
 	end
 	if not pidValue then
 		io.stderr:write(
 			string.format('PID file "%s" does not exist. %s not running?\n',
-				Config.pidFile, Config.appName))
+				pidFile, self.appName))
 	end
-	if Config.enableLogger then
-		nixio.closelog()
-	end
+	return retVal
 end
 
-local function preRun()
-	-- Exit if internet-detector mode != 2(Service)
-	if Config.mode ~= 2 then
-		io.stderr:write(string.format('Start failed, mode != 2\n', Config.appName))
+function InternetDetector:stop()
+	local appName = self.appName:gsub("-", "%%-")
+	local success
+	for i = 0, 10 do
+		success = true
+		local ok, commonDir = pcall(dirent.files, self.commonDir)
+		if ok then
+			for item in commonDir do
+				if item:match("^" .. appName .. ".-%.pid$") then
+					self:stopInstance(string.format("%s/%s", self.commonDir, item))
+					success = false
+				end
+			end
+			if success then
+				break
+			end
+			unistd.sleep(1)
+		else
+			break
+		end
+	end
+
+end
+
+function InternetDetector:preRun()
+	-- Exit if internet-detector mode != 1(Service)
+	if self.mode ~= 1 then
+		io.stderr:write(string.format('Start failed, mode != 1\n', self.appName))
 		os.exit(0)
 	end
-	if nixio.fs.access(Config.pidFile, "r") then
+	if stat.stat(self.pidFile) then
 		io.stderr:write(
 			string.format('PID file "%s" already exist. %s already running?\n',
-				Config.pidFile, Config.appName))
+				self.pidFile, self.appName))
 		return false
 	end
 	return true
 end
 
-local function run()
-	local pidValue = nixio.getpid()
-	writeValueToFile(Config.pidFile, pidValue)
-	if Config.enableLogger then
-		nixio.openlog(Config.appName, "pid")
+function InternetDetector:run()
+	local pidValue = unistd.getpid()
+	self:writeValueToFile(self.pidFile, pidValue)
+	if self.enableLogger then
+		syslog.openlog(self.appName, syslog.LOG_PID, syslog.LOG_DAEMON)
 	end
-	writeLogMessage("info", "started")
-	loadModules()
+	self:writeLogMessage("info", "started")
+	self:loadModules()
 
 	-- Loaded modules
 	local modules = {}
-	for _, v in ipairs(Config.modules) do
+	for _, v in ipairs(self.modules) do
 		modules[#modules + 1] = string.format("%s", v.name)
 	end
 	if #modules > 0 then
-		writeLogMessage(
+		self:writeLogMessage(
 			"info", string.format("Loaded modules: %s", table.concat(modules, ", "))
 		)
 	end
 
 	-- Debug
-	if Config.debug then
-
+	if self.debug then
 		local function inspectTable()
 			local tables = {}, f
 			f = function(t, prefix)
@@ -459,92 +544,125 @@ local function run()
 		end
 
 		io.stdout:write("--- Config ---\n")
-		inspectTable()(Config, "Config.")
+		inspectTable()(self, "self.")
 		io.stdout:flush()
 	end
 
-	main()
-	if Config.enableLogger then
-		nixio.closelog()
+	self:writeValueToFile(
+		self.statusFile, self:statusJson(-1, self.serviceConfig.instance))
+
+	self:main()
+
+	self:removeProcessFiles()
+	if self.enableLogger then
+		self:writeLogMessage("info", "stoped")
+		syslog.closelog()
 	end
 end
 
-local function noDaemon()
-	if not preRun() then
+function InternetDetector:noDaemon()
+	if not self:preRun() then
 		return
 	end
-	run()
+	self:run()
 end
 
-local function daemon(debug)
-	if not preRun() then
+function InternetDetector:daemon()
+	if not self:preRun() then
 		return
 	end
 	-- UNIX double fork
-	if nixio.fork() == 0 then
-		nixio.setsid()
-		if nixio.fork() == 0 then
-			nixio.chdir("/")
-			nixio.umask(0)
-			local output = "/dev/null"
-			if debug then
-				output       = Config.debugLog
-				Config.debug = true
-			end
+	if unistd.fork() == 0 then
+		unistd.setpid("s")
+		if unistd.fork() == 0 then
+			unistd.chdir("/")
+			stat.umask(0)
+			local devnull = fcntl.open("/dev/null", fcntl.O_RDWR)
 			io.stdout:flush()
 			io.stderr:flush()
-			nixio.dup(io.open("/dev/null", "r"), io.stdin)
-			nixio.dup(io.open(output, "a+"), io.stdout)
-			nixio.dup(io.open(output, "a+"), io.stderr)
-			run()
+			unistd.dup2(devnull, 0)	-- io.stdin
+			unistd.dup2(devnull, 1)	-- io.stdout
+			unistd.dup2(devnull, 2)	-- io.stderr
+			self:run()
+			unistd.close(devnull)
 		end
 		os.exit(0)
 	end
 	os.exit(0)
 end
 
-local function restart()
-	stop()
-	daemon()
+function InternetDetector:setServiceConfig(instance)
+	if self:loadUCIConfig("instance", instance) then
+		self:parseHosts()
+		return true
+	end
 end
 
 -- Main section
 
-parseHosts()
-
 local function help()
 	return string.format(
-		"Usage: %s [start|stop|restart|no-daemon|debug|status|inet-status|inet-status-json|poll [<attempts num>] [<timeout sec>]|--help]",
+		"Usage: %s service <UCI instance> | nodaemon <UCI instance> | debug <UCI instance> | stop | status | inet-status | poll [<attempts num>] [<timeout sec>] | --help",
 		arg[0]
 	)
 end
 
 local helpArgs = { ["-h"] = true, ["--help"] = true, ["help"] = true }
-if arg[1] == "start" or #arg == 0 then
-	daemon()
-elseif arg[1] == "no-daemon" then
-	noDaemon()
-elseif arg[1] == "debug" then
-	daemon(true)
-elseif arg[1] == "stop" then
-	stop()
-elseif arg[1] == "restart" then
-	restart()
-elseif arg[1] == "status" then
-	print(status())
-elseif arg[1] == "inet-status" then
-	print(inetStatus())
-elseif arg[1] == "inet-status-json" then
-	print(inetStatus(true))
-elseif arg[1] == "poll" then
-	local attempts, timeout
-	if arg[2] and arg[2]:match("[0-9]+") then
-		attempts = tonumber(arg[2])
-		if arg[3] and arg[3]:match("[0-9]+") then
-			timeout = tonumber(arg[3])
+if arg[1] == "service" then
+	if arg[2] then
+		if InternetDetector:setServiceConfig(arg[2]) then
+			InternetDetector:daemon()
+		else
+			os.exit(126)
 		end
+	else
+		print(help())
+		os.exit(1)
 	end
-	print(poll(attempts, timeout))
+elseif arg[1] == "nodaemon" then
+	if arg[2] then
+		if InternetDetector:setServiceConfig(arg[2]) then
+			InternetDetector:noDaemon()
+		else
+			os.exit(126)
+		end
+	else
+		print(help())
+		os.exit(1)
+	end
+elseif arg[1] == "debug" then
+	if arg[2] then
+		if InternetDetector:setServiceConfig(arg[2]) then
+			InternetDetector.debug = true
+			InternetDetector:noDaemon()
+		else
+			os.exit(126)
+		end
+	else
+		print(help())
+		os.exit(1)
+	end
+elseif arg[1] == "stop" then
+	InternetDetector:stop()
+elseif arg[1] == "status" then
+	print(InternetDetector:status())
+elseif arg[1] == "inet-status" then
+	print(InternetDetector:inetStatus())
+elseif arg[1] == "poll" then
+	if InternetDetector:loadUCIConfig("ui", "ui") then
+		InternetDetector:parseHosts()
+
+		if arg[2] and arg[2]:match("[0-9]+") then
+			InternetDetector.serviceConfig.connection_attempts = tonumber(arg[2])
+			if arg[3] and arg[3]:match("[0-9]+") then
+				InternetDetector.serviceConfig.connection_timeout = tonumber(arg[3])
+			end
+		end
+
+		print(InternetDetector:poll())
+	else
+		os.exit(126)
+	end
 elseif helpArgs[arg[1]] then
 	print(help())
 else

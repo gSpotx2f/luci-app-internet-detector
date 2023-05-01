@@ -12,6 +12,9 @@ msgid ""
 "available."
 msgstr ""
 
+msgid "Add instance"
+msgstr ""
+
 msgid "Alive interval"
 msgstr ""
 
@@ -78,6 +81,9 @@ msgid "Disconnected"
 msgstr ""
 
 msgid "Dismiss"
+msgstr ""
+
+msgid "DNS query type"
 msgstr ""
 
 msgid "DNS provider"
@@ -152,6 +158,12 @@ msgid ""
 msgstr ""
 
 msgid "Huge: 1492 bytes"
+msgstr ""
+
+msgid "ICMP-echo request (ping)"
+msgstr ""
+
+msgid "ICMP packet data size"
 msgstr ""
 
 msgid "Interface"
@@ -258,17 +270,6 @@ msgstr ""
 msgid "Password for SMTP authentication."
 msgstr ""
 
-msgid ""
-"Performing actions when connecting and disconnecting the Internet (available "
-"in the \"Service\" mode)."
-msgstr ""
-
-msgid "Ping host"
-msgstr ""
-
-msgid "Ping packet size"
-msgstr ""
-
 msgid "Polling interval"
 msgstr ""
 
@@ -335,10 +336,10 @@ msgstr ""
 msgid "Service for determining the public IP address through DNS."
 msgstr ""
 
-msgid "Service modules"
+msgid "Service: detector always runs as a system service."
 msgstr ""
 
-msgid "Service: detector always runs as a system service."
+msgid "Service instances"
 msgstr ""
 
 msgid "Set the modem to be allowed to use any band."
@@ -366,6 +367,9 @@ msgid "TCP port"
 msgstr ""
 
 msgid "TCP port connection"
+msgstr ""
+
+msgid "The type of record requested in the DNS query (if the service supports it)."
 msgstr ""
 
 msgid "TLS: use STARTTLS if the server supports it."
@@ -404,7 +408,7 @@ msgstr ""
 msgid "Waiting for a reboot to complete before performing a forced reboot."
 msgstr ""
 
-msgid "Web UI only"
+msgid "Web UI only (UI detector)"
 msgstr ""
 
 msgid "Web UI only: detector works only when the Web UI is open (UI detector)."

@@ -24,6 +24,9 @@ msgid ""
 "available."
 msgstr "<abbr title=\"Светодиод\">LED</abbr> включен если Интернет доступен."
 
+msgid "Add instance"
+msgstr "Добавить экземпляр"
+
 msgid "Alive interval"
 msgstr "Интервал при подключении"
 
@@ -92,6 +95,9 @@ msgstr "Отключен"
 msgid "Dismiss"
 msgstr "Закрыть"
 
+msgid "DNS query type"
+msgstr "Тип DNS-запроса"
+
 msgid "DNS provider"
 msgstr "DNS провайдер"
 
@@ -117,7 +123,7 @@ msgid "Enable"
 msgstr "Включить"
 
 msgid "Enable logging"
-msgstr "Включить запись событий в лог"
+msgstr "Запись событий в лог"
 
 msgid "Enabled"
 msgstr "Включен"
@@ -167,6 +173,12 @@ msgstr ""
 
 msgid "Huge: 1492 bytes"
 msgstr "Огромный: 1492 байта"
+
+msgid "ICMP-echo request (ping)"
+msgstr "Запрос ICMP-echo (ping)"
+
+msgid "ICMP packet data size"
+msgstr "Размер данных ICMP-пакета"
 
 msgid "Interface"
 msgstr "Интерфейс"
@@ -288,19 +300,6 @@ msgstr "Пароль"
 msgid "Password for SMTP authentication."
 msgstr "Пароль для SMTP-аутентификации."
 
-msgid ""
-"Performing actions when connecting and disconnecting the Internet (available "
-"in the \"Service\" mode)."
-msgstr ""
-"Выполнение действий при подключении и отключении Интернет (доступно в режиме "
-"\"Служба\")."
-
-msgid "Ping host"
-msgstr "Пинг хоста"
-
-msgid "Ping packet size"
-msgstr "Размер пакета Ping"
-
 msgid "Polling interval"
 msgstr "Интервал опроса"
 
@@ -367,11 +366,11 @@ msgstr "Конфигурация службы"
 msgid "Service for determining the public IP address through DNS."
 msgstr "Сервис для определения публичного IP адреса через DNS."
 
-msgid "Service modules"
-msgstr "Модули службы"
-
 msgid "Service: detector always runs as a system service."
 msgstr "Служба: детектор работает постоянно, как системная служба."
+
+msgid "Service instances"
+msgstr "Экземпляры службы"
 
 msgid "Set the modem to be allowed to use any band."
 msgstr "Разрешить модему использование любой частоты."
@@ -399,6 +398,9 @@ msgstr "TCP-порт"
 
 msgid "TCP port connection"
 msgstr "Подключение к TCP-порту"
+
+msgid "The type of record requested in the DNS query (if the service supports it)."
+msgstr "Тип записи запрашиваемой в DNS-запросе (если сервис поддерживает)."
 
 msgid "TLS: use STARTTLS if the server supports it."
 msgstr "TLS: использовать STARTTLS если сервер поддерживает."
@@ -438,8 +440,8 @@ msgstr ""
 "Ожидание завершения перезагрузки перед выполнением принудительной "
 "перезагрузки."
 
-msgid "Web UI only"
-msgstr "Только web-интерфейс"
+msgid "Web UI only (UI detector)"
+msgstr "Только web-интерфейс (UI детектор)"
 
 msgid "Web UI only: detector works only when the Web UI is open (UI detector)."
 msgstr ""

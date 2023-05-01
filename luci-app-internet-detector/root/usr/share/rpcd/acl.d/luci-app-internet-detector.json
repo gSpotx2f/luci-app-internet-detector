@@ -4,8 +4,8 @@
 		"read": {
 			"file": {
 				"/sys/class/leds": [ "list" ],
-				"/etc/internet-detector/up-script": [ "read" ],
-				"/etc/internet-detector/down-script": [ "read" ],
+				"/etc/internet-detector/up-script*": [ "read" ],
+				"/etc/internet-detector/down-script*": [ "read" ],
 				"/usr/bin/internet-detector*": [ "exec" ],
 				"/usr/bin/mailsend": [ "exec" ]
 			},
@@ -16,8 +16,8 @@
 		},
 		"write": {
 			"file": {
-				"/etc/internet-detector/up-script": [ "write" ],
-				"/etc/internet-detector/down-script": [ "write" ]
+				"/etc/internet-detector/up-script*": [ "write" ],
+				"/etc/internet-detector/down-script*": [ "write" ]
 			},
 			"uci": [ "internet-detector" ]
 		}

@@ -1,11 +1,11 @@
 #
-# (с) 2021 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
+# (с) 2023 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
 #
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=internet-detector
-PKG_VERSION:=0.6
+PKG_VERSION:=1.0
 PKG_RELEASE:=0
 PKG_MAINTAINER:=gSpot <https://github.com/gSpotx2f/luci-app-internet-detector>
 
@@ -17,17 +17,19 @@ define Package/$(PKG_NAME)
   TITLE:=Internet detector
   URL:=https://github.com/gSpotx2f/luci-app-internet-detector
   PKGARCH:=all
-  DEPENDS:=+lua +luci-lib-nixio +libuci-lua
+  DEPENDS:=+lua +luaposix +libuci-lua
 endef
 
 define Package/$(PKG_NAME)/description
   Internet-detector is a small daemon
   for checking Internet availability.
-  Written in Lua using the nixio library.
+  Written in Lua using the luaposix library.
 endef
 
 define Package/$(PKG_NAME)/conffiles
 /etc/config/internet-detector
+/etc/internet-detector/down-script.internet
+/etc/internet-detector/up-script.internet
 endef
 
 define Build/Configure
@@ -40,8 +42,8 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/etc/config/internet-detector $(1)/etc/config/internet-detector
 	$(INSTALL_DIR) $(1)/etc/internet-detector
-	$(INSTALL_BIN) ./files/etc/internet-detector/down-script $(1)/etc/internet-detector/down-script
-	$(INSTALL_BIN) ./files/etc/internet-detector/up-script $(1)/etc/internet-detector/up-script
+	$(INSTALL_DATA) ./files/etc/internet-detector/down-script.internet $(1)/etc/internet-detector/down-script.internet
+	$(INSTALL_DATA) ./files/etc/internet-detector/up-script.internet $(1)/etc/internet-detector/up-script.internet
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/etc/init.d/internet-detector $(1)/etc/init.d/internet-detector
 	$(INSTALL_DIR) $(1)/usr/bin

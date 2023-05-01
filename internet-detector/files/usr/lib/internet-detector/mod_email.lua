@@ -2,11 +2,13 @@
 	Dependences:
 		mailsend
 --]]
-local nixio  = require("nixio")
+local unistd = require("posix.unistd")
 
 local Module = {
 	name               = "mod_email",
-	config             = {},
+	config             = {
+		debug = false,
+	},
 	syslog             = function(level, msg) return true end,
 	writeValue         = function(filePath, str) return false end,
 	readValue          = function(filePath) return nil end,
@@ -45,7 +47,7 @@ function Module:init(t)
 	self.mailSmtpPort  = t.mail_smtp_port
 	self.mailSecurity  = t.mail_security
 
-	if nixio.fs.access(self.mta, "x") then
+	if unistd.access(self.mta, "x") then
 		self._enabled = true
 	else
 		self._enabled = false
@@ -66,16 +68,19 @@ end
 
 function Module:sendMessage(msg)
 	local verboseArg = ""
+
 	-- Debug
 	if self.config.debug then
 		verboseArg = " -v"
-		io.stdout:write("--- mod_email ---\n")
+		io.stdout:write(string.format("--- %s ---\n", self.name))
 		io.stdout:flush()
 	end
+
 	local securityArgs = "-starttls -auth-login"
 	if self.mailSecurity == "ssl" then
 		securityArgs = "-ssl -auth"
 	end
+
 	local mtaCmd = string.format(
 		'%s%s %s -smtp "%s" -port %s -cs utf-8 -user "%s" -pass "%s" -f "%s" -t "%s" -sub "%s" -M "%s"',
 		self.mta, verboseArg, securityArgs, self.mailSmtp, self.mailSmtpPort,
@@ -102,12 +107,14 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 		self._msgSent        = false
 		self._lastConnection = nil
 		if not self._disconnected then
-			self._disconnected      = true
+			self._disconnected = true
 			if not self._lastDisconnection then
 				self._lastDisconnection = os.date("%Y.%m.%d %H:%M:%S", os.time())
 			end
 		end
+
 	else
+
 		if not self._msgSent then
 
 			if not self._lastConnection then

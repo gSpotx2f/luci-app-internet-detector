@@ -1,5 +1,5 @@
 
-local nixio  = require("nixio")
+local unistd = require("posix.unistd")
 
 local Module = {
 	name             = "mod_reboot",
@@ -16,9 +16,8 @@ local Module = {
 function Module:rebootDevice()
 	self.syslog("warning", string.format("%s: reboot", self.name))
 	os.execute("/sbin/reboot &")
-
 	if self.forceRebootDelay > 0 then
-		nixio.nanosleep(self.forceRebootDelay)
+		unistd.sleep(self.forceRebootDelay)
 		self.syslog("warning", string.format("%s: force reboot", self.name))
 		self.writeValue("/proc/sys/kernel/sysrq", "1")
 		self.writeValue("/proc/sysrq-trigger", "b")

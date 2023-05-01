@@ -1,5 +1,6 @@
 
-local nixio  = require("nixio")
+local unistd = require("posix.unistd")
+local dirent = require("posix.dirent")
 
 local Module = {
 	name                  = "mod_led_control",
@@ -20,13 +21,13 @@ local Module = {
 }
 
 function Module:resetLeds()
-	local dir = nixio.fs.dir(self.sysLedsDir)
-	if not dir then
+	local ok, dir = pcall(dirent.files, self.sysLedsDir)
+	if not ok then
 		return
 	end
 	for led in dir do
 		local brightness = string.format("%s/%s/brightness", self.sysLedsDir, led)
-		if nixio.fs.access(brightness, "w") then
+		if unistd.access(brightness, "w") then
 			self.writeValue(brightness, 0)
 		end
 	end
@@ -41,10 +42,11 @@ function Module:init(t)
 	self._ledMaxBrightnessFile = string.format("%s/max_brightness", self._ledDir)
 	self._ledBrightnessFile    = string.format("%s/brightness", self._ledDir)
 	self._ledMaxBrightness     = self.readValue(self._ledMaxBrightnessFile) or 1
-	if (not nixio.fs.access(self._ledDir, "r") or
-	    not nixio.fs.access(self._ledBrightnessFile, "r", "w")) then
+	if (not unistd.access(self._ledDir, "r") or
+	    not unistd.access(self._ledBrightnessFile, "rw")) then
 		self._enabled = false
-		self.syslog("warning", string.format("%s: LED '%s' is not available", self.name, self.ledName))
+		self.syslog("warning", string.format(
+			"%s: LED '%s' is not available", self.name, self.ledName))
 	else
 		self._enabled = true
 		-- Reset all LEDs
@@ -85,6 +87,7 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 
 		self._counter = 0
 	end
+
 	self._counter = self._counter + timeDiff
 end
 
