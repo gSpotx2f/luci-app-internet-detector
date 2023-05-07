@@ -217,7 +217,7 @@ msgstr ""
 msgid ""
 "Longest period of time after connecting to the Internet before sending a "
 "message."
-msgstr "Максимальный промежуток времени после отключения Интернет перед отправкой сообщения."
+msgstr "Максимальный промежуток времени после подключения Интернет перед отправкой сообщения."
 
 msgid ""
 "Longest period of time after disconnecting from Internet before \"down-script"
