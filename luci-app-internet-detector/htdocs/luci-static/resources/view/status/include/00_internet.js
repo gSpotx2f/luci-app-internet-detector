@@ -61,6 +61,8 @@ return baseclass.extend({
 	uiCheckIntervalDown : null,
 	currentAppMode      : null,
 	inetStatus          : null,
+	uiState             : null,
+	counter             : 0,
 
 	inetStatusFromJson  : function(res) {
 		let inetStatData = null;
@@ -73,11 +75,7 @@ return baseclass.extend({
 	},
 
 	load: async function() {
-		if(!(
-			this.uiCheckIntervalUp &&
-			this.uiCheckIntervalDown &&
-			this.currentAppMode
-		)) {
+		if(!(this.uiCheckIntervalUp && this.uiCheckIntervalDown && this.currentAppMode)) {
 			await uci.load(this.appName).then(data => {
 				this.uiCheckIntervalUp   = Number(uci.get(this.appName, 'ui', 'interval_up'));
 				this.uiCheckIntervalDown = Number(uci.get(this.appName, 'ui', 'interval_down'));
@@ -86,18 +84,15 @@ return baseclass.extend({
 		};
 
 		if(this.currentAppMode === '2') {
-			this.internetDetectorCounter = ('internetDetectorCounter' in this) ?
-				++this.internetDetectorCounter : 0;
+			this.counter++;
 
-			if((this.internetDetectorStateUi === 0 &&
-					this.internetDetectorCounter % this.uiCheckIntervalUp) ||
-				(this.internetDetectorStateUi === 1 &&
-					this.internetDetectorCounter % this.uiCheckIntervalDown)
+			if((this.uiState === 0 && this.counter % this.uiCheckIntervalUp) ||
+				(this.uiState === 1 && this.counter % this.uiCheckIntervalDown)
 			) {
 				return;
 			};
 
-			this.internetDetectorCounter = 0;
+			this.counter = 0;
 			return L.resolveDefault(fs.exec(this.execPath, [ 'poll' ]), null);
 		}
 		else if(this.currentAppMode === '1') {
@@ -113,7 +108,7 @@ return baseclass.extend({
 		if(data) {
 			this.inetStatus = this.inetStatusFromJson(data);
 			if(this.currentAppMode === '2') {
-				this.internetDetectorStateUi = this.inetStatus.instances[0].inet;
+				this.uiState = this.inetStatus.instances[0].inet;
 			};
 		};
 
