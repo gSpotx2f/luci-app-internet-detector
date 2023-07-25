@@ -608,7 +608,7 @@ return view.extend({
 				'down_script',
 				this.configDir + '/down-script.' + s.section,
 				_('Edit down-script'),
-				_('Shell commands that run when connected to the Internet.')
+				_('Shell commands to run when disconnected from the Internet.')
 			);
 			o.modalonly = true;
 
