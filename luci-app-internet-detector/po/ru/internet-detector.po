@@ -20,9 +20,14 @@ msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
 msgstr "Управление <abbr title=\"Светодиод\">LED</abbr>"
 
 msgid ""
-"<abbr title=\"Light Emitting Diode\">LED</abbr> is on when Internet is "
-"available."
-msgstr "<abbr title=\"Светодиод\">LED</abbr> включен если Интернет доступен."
+"<abbr title=\"Light Emitting Diode\">LED</abbr> indicates the Internet status."
+msgstr "<abbr title=\"Светодиод\">LED</abbr> отображает статус Интернет."
+
+msgid "Action when connected"
+msgstr "Действие при подключении"
+
+msgid "Action when disconnected"
+msgstr "Действие при отключении"
 
 msgid "Add instance"
 msgstr "Добавить экземпляр"
@@ -43,6 +48,9 @@ msgstr "Произошла ошибка"
 
 msgid "Big: 248 bytes"
 msgstr "Большой: 248 байт"
+
+msgid "Blink"
+msgstr "Мигать"
 
 msgid "Check type"
 msgstr "Тип проверки"
@@ -290,6 +298,12 @@ msgstr "Сеть будет перезапущена при отключении
 
 msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
 msgstr "Нет доступных <abbr title=\"Светодиод\">LED</abbr>..."
+
+msgid "Off"
+msgstr "Выключить"
+
+msgid "On"
+msgstr "Включить"
 
 msgid "One of the following:"
 msgstr "Одно из следующих значений:"

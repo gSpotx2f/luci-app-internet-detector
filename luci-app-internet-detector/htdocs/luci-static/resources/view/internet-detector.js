@@ -194,7 +194,6 @@ return view.extend({
 
 		if(!this.inetStatus || !this.inetStatus.instances || this.inetStatus.instances.length === 0) {
 			let label = E('span', { 'class': 'id-label-status id-undefined' }, _('Undefined'))
-
 			if(this.currentAppMode !== '0' && this.appStatus !== 'stoped') {
 				label.classList.add('spinning');
 			};
@@ -251,9 +250,8 @@ return view.extend({
 		]).then(stat => {
 			let curAppStatus = (stat[0].code === 0) ? stat[0].stdout.trim() : null;
 			let inetStatData = this.inetStatusFromJson(stat[1]);
-
-			this.appStatus  = curAppStatus;
-			this.inetStatus = inetStatData;
+			this.appStatus   = curAppStatus;
+			this.inetStatus  = inetStatData;
 			this.setInternetStatus();
 		}).catch(e => {
 			this.appStatus  = 'stoped';
@@ -273,9 +271,11 @@ return view.extend({
 
 		return fs.exec(this.execPath, [ 'poll' ]).then(res => {
 			let inetStatData = this.inetStatusFromJson(res);
+
 			if(inetStatData.instances[0]) {
 				this.uiPollState = inetStatData.instances[0].inet;
 			};
+
 			this.inetStatus = inetStatData;
 			this.setInternetStatus();
 		});
@@ -330,6 +330,7 @@ return view.extend({
 
 		renderWidget: function(section_id, option_index, cfgvalue) {
 			this.ctx.setInternetStatus();
+
 			return E([
 				E('label', { 'class': 'cbi-value-title', 'for': 'inetStatusArea' },
 					_('Internet status')
@@ -652,6 +653,7 @@ return view.extend({
 			'hosts', _('Hosts'),
 			_('Hosts to check Internet availability. Hosts are polled (in list order) until at least one of them responds.')
 		);
+		//o.datatype  = 'or(host,hostport)';
 		o.datatype = 'or(or(host,hostport),ipaddrport(1))';
 		o.default  = this.defaultHosts;
 		o.rmempty  = false;
@@ -755,11 +757,12 @@ return view.extend({
 		o = ss.taboption('led_control', form.DummyValue, '_dummy');
 			o.rawhtml = true;
 			o.default = '<div class="cbi-section-descr">' +
-				_('<abbr title="Light Emitting Diode">LED</abbr> is on when Internet is available.') +
+				_('<abbr title="Light Emitting Diode">LED</abbr> indicates the Internet status.') +
 				'</div>';
 		o.modalonly = true;
 
 		if(this.leds.length > 0) {
+			this.leds.sort((a, b) => a.name > b.name);
 
 			// enabled
 			o = ss.taboption('led_control', form.Flag, 'mod_led_control_enabled',
@@ -772,8 +775,27 @@ return view.extend({
 				_('<abbr title="Light Emitting Diode">LED</abbr> Name'));
 			o.depends({ mod_led_control_enabled: '1' });
 			o.modalonly = true;
-			this.leds.sort((a, b) => a.name > b.name);
 			this.leds.forEach(e => o.value(e.name));
+
+			// led_action_1
+			o = ss.taboption('led_control', form.ListValue, 'mod_led_control_led_action_1',
+				_('Action when connected'));
+			o.depends({ mod_led_control_enabled: '1' });
+			o.modalonly = true;
+			o.value(1, _('Off'));
+			o.value(2, _('On'));
+			o.value(3, _('Blink'));
+			o.default = '2';
+
+			// led_action_2
+			o = ss.taboption('led_control', form.ListValue, 'mod_led_control_led_action_2',
+				_('Action when disconnected'));
+			o.depends({ mod_led_control_enabled: '1' });
+			o.modalonly = true;
+			o.value(1, _('Off'));
+			o.value(2, _('On'));
+			o.value(3, _('Blink'));
+			o.default = '1';
 		} else {
 			o = ss.taboption('led_control', form.DummyValue, '_dummy');
 			o.rawhtml = true;
@@ -1176,7 +1198,7 @@ return view.extend({
 			'iface', _('Interface'),
 			_('Network interface for Internet access. If not specified, the default interface is used.')
 		);
-		o.noaliases  = true;
+		o.noaliases = true;
 
 		// interval_up
 		o = ss.option(form.ListValue,

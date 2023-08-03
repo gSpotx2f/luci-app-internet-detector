@@ -8,8 +8,13 @@ msgid "<abbr title=\"Light Emitting Diode\">LED</abbr> control"
 msgstr ""
 
 msgid ""
-"<abbr title=\"Light Emitting Diode\">LED</abbr> is on when Internet is "
-"available."
+"<abbr title=\"Light Emitting Diode\">LED</abbr> indicates the Internet status."
+msgstr ""
+
+msgid "Action when connected"
+msgstr ""
+
+msgid "Action when disconnected"
 msgstr ""
 
 msgid "Add instance"
@@ -30,6 +35,9 @@ msgid "An error has occurred"
 msgstr ""
 
 msgid "Big: 248 bytes"
+msgstr ""
+
+msgid "Blink"
 msgstr ""
 
 msgid "Check type"
@@ -259,6 +267,12 @@ msgid "Network will be restarted when the Internet is disconnected."
 msgstr ""
 
 msgid "No <abbr title=\"Light Emitting Diode\">LED</abbr>s available..."
+msgstr ""
+
+msgid "Off"
+msgstr ""
+
+msgid "On"
 msgstr ""
 
 msgid "One of the following:"
