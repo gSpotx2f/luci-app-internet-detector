@@ -3,6 +3,7 @@ local unistd = require("posix.unistd")
 
 local Module = {
 	name             = "mod_network_restart",
+	runPrio          = 30,
 	config           = {},
 	syslog           = function(level, msg) return true end,
 	writeValue       = function(filePath, str) return false end,

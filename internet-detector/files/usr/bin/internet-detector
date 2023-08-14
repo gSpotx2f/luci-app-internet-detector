@@ -181,6 +181,7 @@ function InternetDetector:loadModules()
 				end
 			end
 		end
+		table.sort(self.modules, function(a, b) return a.runPrio < b.runPrio end)
 	end
 end
 

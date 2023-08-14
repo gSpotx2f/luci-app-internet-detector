@@ -6,6 +6,7 @@ local unistd = require("posix.unistd")
 
 local Module = {
 	name               = "mod_email",
+	runPrio            = 60,
 	config             = {
 		debug = false,
 	},

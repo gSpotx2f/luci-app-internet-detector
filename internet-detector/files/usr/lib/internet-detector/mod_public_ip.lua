@@ -4,6 +4,7 @@ local unistd = require("posix.unistd")
 
 local Module = {
 	name              = "mod_public_ip",
+	runPrio           = 50,
 	config            = {
 		debug = false,
 		serviceConfig = {

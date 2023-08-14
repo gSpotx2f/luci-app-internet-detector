@@ -4,6 +4,7 @@ local dirent = require("posix.dirent")
 
 local Module = {
 	name                  = "mod_led_control",
+	runPrio               = 10,
 	config                = {},
 	syslog                = function(level, msg) return true end,
 	writeValue            = function(filePath, str) return false end,

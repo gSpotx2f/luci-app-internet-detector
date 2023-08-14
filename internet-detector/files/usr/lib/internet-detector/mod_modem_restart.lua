@@ -6,6 +6,7 @@ local unistd = require("posix.unistd")
 
 local Module = {
 	name         = "mod_modem_restart",
+	runPrio      = 40,
 	config       = {},
 	syslog       = function(level, msg) return true end,
 	writeValue   = function(filePath, str) return false end,
