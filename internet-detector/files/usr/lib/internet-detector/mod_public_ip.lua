@@ -161,6 +161,7 @@ function Module:sendUDPMessage(message, server, port)
 						io.stdout:write(string.format(
 							"SOCKET ERROR: %s, %s\n", errMsg, errNum))
 					end
+					unistd.close(sock)
 					return retCode
 				end
 			end

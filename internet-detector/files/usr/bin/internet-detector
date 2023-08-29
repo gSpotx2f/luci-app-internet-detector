@@ -260,6 +260,7 @@ function InternetDetector:TCPConnectionToHost(host, port)
 						io.stdout:write(string.format(
 							"SOCKET ERROR: %s, %s\n", errMsg, errNum))
 					end
+					unistd.close(sock)
 					return retCode
 				end
 			end
@@ -299,6 +300,7 @@ function InternetDetector:TCPConnectionToHost(host, port)
 				io.stdout:flush()
 			end
 
+			socket.shutdown(sock, socket.SHUT_RDWR)
 			unistd.close(sock)
 			retCode = success and 0 or 1
 		end
