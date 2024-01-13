@@ -1,5 +1,6 @@
 
 local socket = require("posix.sys.socket")
+local stdlib = require("posix.stdlib")
 local unistd = require("posix.unistd")
 
 local Module = {
@@ -51,6 +52,8 @@ local Module = {
 			port = 53, queryType = "TXT", queryType6 = "TXT",
 		},
 	},
+	ipScript          = "",
+	enableIpScript    = false,
 	status            = nil,
 	_provider         = nil,
 	_qtype            = false,
@@ -60,6 +63,13 @@ local Module = {
 	_interval         = 600,
 	_DNSPacket        = nil,
 }
+
+function Module:runIpScript()
+	if self.enableIpScript and unistd.access(self.ipScript, "r") then
+		stdlib.setenv("PUBLIC_IP", self.status)
+		os.execute(string.format('/bin/sh "%s" &', self.ipScript))
+	end
+end
 
 function Module:getQueryType(type)
 	local types = {
@@ -214,6 +224,7 @@ function Module:parseParts(message, start, parts)
 	end
 
 	local partEnd     = partStart + (tonumber(partLen, 16) * 2)
+
 	parts[#parts + 1] = message:sub(partStart, partEnd - 1)
 	if message:sub(partEnd, partEnd + 1) == "00" or partEnd > #message then
 		return parts
@@ -224,7 +235,6 @@ end
 
 function Module:decodeMessage(message)
 	local retTable = {}
-
 	local t = {}
 	for i = 1, #message do
 		t[#t + 1] = string.format("%.2x", string.byte(message, i))
@@ -237,8 +247,8 @@ function Module:decodeMessage(message)
 
 	local questionSectionStarts = 25
 	local questionParts = self:parseParts(message, questionSectionStarts, {})
-	local qtypeStarts   = questionSectionStarts + (#table.concat(questionParts)) + (#questionParts * 2) + 1
-	local qclassStarts  = qtypeStarts + 4
+	local qtypeStarts  = questionSectionStarts + (#table.concat(questionParts)) + (#questionParts * 2) + 1
+	local qclassStarts = qtypeStarts + 4
 
 	local answerSectionStarts = qclassStarts + 4
 	local numAnswers          = math.max(
@@ -333,6 +343,13 @@ function Module:init(t)
 	else
 		self._provider = self.providers.opendns1
 	end
+	if self.config.configDir then
+		self.ipScript = string.format(
+			"%s/public-ip-script.%s", self.config.configDir, self.config.serviceConfig.instance)
+		if t.enable_ip_script then
+			self.enableIpScript = (tonumber(t.enable_ip_script) ~= 0)
+		end
+	end
 	self._qtype = (tonumber(t.qtype) ~= 0)
 	self._currentIp = nil
 	self._DNSPacket = nil
@@ -350,7 +367,7 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 			local ip = self:resolveIP()
 
 			if not ip then
-				ip = "Undefined"
+				ip = ""
 				self._interval = self.runIntervalFailed
 			else
 				self._interval = self.runInterval
@@ -360,8 +377,11 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 				self.status = ip
 				self.syslog(
 					"notice",
-					string.format("%s: public IP address %s", self.name, ip)
+					string.format("%s: public IP address %s", self.name, (ip == "") and "Undefined" or ip)
 				)
+				if self._counter > 0 then
+					self:runIpScript()
+				end
 			else
 				self.status = nil
 			end

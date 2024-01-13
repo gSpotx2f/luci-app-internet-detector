@@ -5,8 +5,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=internet-detector
-PKG_VERSION:=1.0
-PKG_RELEASE:=3
+PKG_VERSION:=1.1
+PKG_RELEASE:=0
 PKG_MAINTAINER:=gSpot <https://github.com/gSpotx2f/luci-app-internet-detector>
 
 include $(INCLUDE_DIR)/package.mk
@@ -30,6 +30,7 @@ define Package/$(PKG_NAME)/conffiles
 /etc/config/internet-detector
 /etc/internet-detector/down-script.internet
 /etc/internet-detector/up-script.internet
+/etc/internet-detector/public-ip-script.internet
 endef
 
 define Build/Configure
@@ -44,6 +45,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/etc/internet-detector
 	$(INSTALL_DATA) ./files/etc/internet-detector/down-script.internet $(1)/etc/internet-detector/down-script.internet
 	$(INSTALL_DATA) ./files/etc/internet-detector/up-script.internet $(1)/etc/internet-detector/up-script.internet
+	$(INSTALL_DATA) ./files/etc/internet-detector/public-ip-script.internet $(1)/etc/internet-detector/public-ip-script.internet
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/etc/init.d/internet-detector $(1)/etc/init.d/internet-detector
 	$(INSTALL_DIR) $(1)/usr/bin

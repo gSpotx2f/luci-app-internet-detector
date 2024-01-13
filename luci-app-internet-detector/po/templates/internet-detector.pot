@@ -103,6 +103,9 @@ msgstr ""
 msgid "Edit down-script"
 msgstr ""
 
+msgid "Edit public-ip-script"
+msgstr ""
+
 msgid "Edit up-script"
 msgstr ""
 
@@ -119,6 +122,9 @@ msgid "Enable"
 msgstr ""
 
 msgid "Enable logging"
+msgstr ""
+
+msgid "Enable public-ip-script"
 msgstr ""
 
 msgid "Enabled"
@@ -360,6 +366,9 @@ msgid "Set the modem to be allowed to use any band."
 msgstr ""
 
 msgid "Shell commands that run when connected to the Internet."
+msgstr ""
+
+msgid "Shell commands that run when the public IP address changes. New IP is available as value of the <code>$PUBLIC_IP</code> variable (empty string if undefined)."
 msgstr ""
 
 msgid "Shell commands to run when connected or disconnected from the Internet."

@@ -133,9 +133,9 @@ return baseclass.extend({
 					className = 'id-label-status id-undefined spinning';
 				};
 
-				let publicIp = (i.mod_public_ip) ? ' | %s: %s'.format(
-					_('Public IP'), _(i.mod_public_ip)
-				) : '';
+				let publicIp = (i.mod_public_ip !== undefined) ?
+					' | %s: %s'.format(_('Public IP'), (i.mod_public_ip === '') ? _('Undefined') : _(i.mod_public_ip))
+				: '';
 
 				inetStatusArea.append(
 					E('span', { 'class': className }, '%s%s%s'.format(

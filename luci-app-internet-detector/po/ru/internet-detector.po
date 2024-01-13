@@ -50,7 +50,7 @@ msgid "Big: 248 bytes"
 msgstr "Большой: 248 байт"
 
 msgid "Blink"
-msgstr "Мигать"
+msgstr "Мигание"
 
 msgid "Check type"
 msgstr "Тип проверки"
@@ -115,6 +115,9 @@ msgstr "Изменить"
 msgid "Edit down-script"
 msgstr "Изменить down-script"
 
+msgid "Edit public-ip-script"
+msgstr "Изменить public-ip-script"
+
 msgid "Edit up-script"
 msgstr "Изменить up-script"
 
@@ -132,6 +135,9 @@ msgstr "Включить"
 
 msgid "Enable logging"
 msgstr "Запись событий в лог"
+
+msgid "Enable public-ip-script"
+msgstr "Включить public-ip-script"
 
 msgid "Enabled"
 msgstr "Включен"
@@ -391,6 +397,9 @@ msgstr "Разрешить модему использование любой ч
 
 msgid "Shell commands that run when connected to the Internet."
 msgstr "Команды shell выполняемые при подключении к Интернет."
+
+msgid "Shell commands that run when the public IP address changes. New IP is available as value of the <code>$PUBLIC_IP</code> variable (empty string if undefined)."
+msgstr "Команды shell выполняемые при изменении публичного IP адреса. Новый IP доступен как значение переменной <code>$PUBLIC_IP</code> (пустая строка если не определён)."
 
 msgid "Shell commands to run when connected or disconnected from the Internet."
 msgstr "Команды shell выполняемые при подключении или отключении Интернет."
