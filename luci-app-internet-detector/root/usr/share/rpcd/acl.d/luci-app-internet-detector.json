@@ -12,7 +12,8 @@
 			},
 			"uci": [ "internet-detector" ],
 			"ubus": {
-				"luci": [ "getInitList", "setInitAction" ]
+				"luci": [ "getInitList", "setInitAction" ],
+				"luci.internet-detector": [ "UIPoll" ]
 			}
 		},
 		"write": {

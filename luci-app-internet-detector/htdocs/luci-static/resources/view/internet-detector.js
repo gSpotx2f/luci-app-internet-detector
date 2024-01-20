@@ -64,7 +64,7 @@ const btnStyleDisabled = 'btn cbi-button-reset';
 const btnStyleApply    = 'btn cbi-button-apply';
 
 var Timefield = ui.Textfield.extend({
-	secToString: function(value) {
+	secToString(value) {
 		let string = '0';
 		if(/^\d+$/.test(value)) {
 			value = Number(value);
@@ -81,7 +81,7 @@ var Timefield = ui.Textfield.extend({
 		return string;
 	},
 
-	render: function() {
+	render() {
 		let frameEl = E('div', { 'id': this.options.id }),
 		    inputEl = E('input', {
 			'id'         : this.options.id ? 'widget.' + this.options.id : null,
@@ -98,7 +98,7 @@ var Timefield = ui.Textfield.extend({
 		return this.bind(frameEl);
 	},
 
-	getValue: function() {
+	getValue() {
 		let rawValue = this.node.querySelector('input').value,
 		    value    = 0,
 		    res      = rawValue.match(/^(\d+)([hms]?)$/);
@@ -121,7 +121,7 @@ var Timefield = ui.Textfield.extend({
 		return String(value);
 	},
 
-	setValue: function(value) {
+	setValue(value) {
 		let inputEl   = this.node.querySelector('input');
 		inputEl.value = this.secToString(value);
 	},
@@ -140,10 +140,6 @@ return view.extend({
 	inetStatusArea      : E('div', { 'class': 'cbi-value-field', 'id': 'inetStatusArea' }),
 	serviceStatusLabel  : E('em', { 'id': 'serviceStatusLabel' }),
 	initButton          : null,
-	uiPollCounter       : 0,
-	uiPollState         : null,
-	uiCheckIntervalUp   : null,
-	uiCheckIntervalDown : null,
 	currentAppMode      : '0',
 	defaultHosts        : [ '8.8.8.8', '1.1.1.1' ],
 	leds                : [],
@@ -164,7 +160,7 @@ return view.extend({
 		expect: { result: false }
 	}),
 
-	getInitStatus: function() {
+	getInitStatus() {
 		return this.callInitStatus(this.appName).then(res => {
 			if(res) {
 				return res[this.appName].enabled;
@@ -177,7 +173,7 @@ return view.extend({
 		});
 	},
 
-	handleServiceAction: function(action) {
+	handleServiceAction(action) {
 		return this.callInitAction(this.appName, action).then(success => {
 			if(!success) {
 				throw _('Command failed');
@@ -189,12 +185,24 @@ return view.extend({
 		});
 	},
 
-	setInternetStatus: function() {
+	callUIPoll: rpc.declare({
+		object: 'luci.internet-detector',
+		method: 'UIPoll',
+		expect: { '': {} }
+	}),
+
+	getUIPoll() {
+		return this.callUIPoll().then(data => {
+			return data;
+		});
+	},
+
+	setInternetStatus() {
 		this.inetStatusArea.innerHTML = '';
 
 		if(!this.inetStatus || !this.inetStatus.instances || this.inetStatus.instances.length === 0) {
-			let label = E('span', { 'class': 'id-label-status id-undefined' }, _('Undefined'))
-			if(this.currentAppMode !== '0' && this.appStatus !== 'stoped') {
+			let label = E('span', { 'class': 'id-label-status id-undefined' }, _('Undefined'));
+			if((this.currentAppMode === '1' && this.appStatus !== 'stoped') || this.currentAppMode === '2') {
 				label.classList.add('spinning');
 			};
 			this.inetStatusArea.append(label);
@@ -219,8 +227,7 @@ return view.extend({
 
 				this.inetStatusArea.append(
 					E('span', { 'class': className }, '%s%s%s'.format(
-						(this.currentAppMode === '1') ? i.instance + ': ' : '',
-						status, publicIp)
+						i.instance + ': ', status, publicIp)
 					)
 				);
 			};
@@ -233,7 +240,7 @@ return view.extend({
 		};
 	},
 
-	inetStatusFromJson: function(res) {
+	inetStatusFromJson(res) {
 		let inetStatData = null;
 		if(res.code === 0) {
 			try {
@@ -243,7 +250,7 @@ return view.extend({
 		return inetStatData;
 	},
 
-	servicePoll: function() {
+	servicePoll() {
 		return Promise.all([
 			fs.exec(this.execPath, [ 'status' ]),
 			fs.exec(this.execPath, [ 'inet-status' ]),
@@ -259,31 +266,18 @@ return view.extend({
 		});
 	},
 
-	uiPoll: function() {
-		this.uiPollCounter = ++this.uiPollCounter;
-
-		if((this.uiPollState === 0 && this.uiPollCounter % this.uiCheckIntervalUp) ||
-			(this.uiPollState === 1 && this.uiPollCounter % this.uiCheckIntervalDown)) {
-			return;
-		};
-
-		this.uiPollCounter = 0;
-
-		return fs.exec(this.execPath, [ 'poll' ]).then(res => {
-			let inetStatData = this.inetStatusFromJson(res);
-			if(inetStatData.instances[0]) {
-				this.uiPollState = inetStatData.instances[0].inet;
-			};
-			this.inetStatus = inetStatData;
+	uiPoll() {
+		return this.getUIPoll().then(status => {
+			this.inetStatus = status;
 			this.setInternetStatus();
 		});
 	},
 
-	serviceRestart: function() {
+	serviceRestart() {
 		return this.handleServiceAction('restart');
 	},
 
-	serviceRestartHandler: function() {
+	serviceRestartHandler() {
 		poll.stop();
 		return this.serviceRestart().then(() => {
 			window.setTimeout(() => this.servicePoll(), 1000);
@@ -294,7 +288,7 @@ return view.extend({
 	CBITimeInput: form.Value.extend({
 		__name__ : 'CBI.TimeInput',
 
-		renderWidget: function(section_id, option_index, cfgvalue) {
+		renderWidget(section_id, option_index, cfgvalue) {
 			let value  = (cfgvalue != null) ? cfgvalue : this.default,
 				widget = new Timefield(value, {
 				id         : this.cbid(section_id),
@@ -318,7 +312,7 @@ return view.extend({
 	CBIBlockInetStatus: form.Value.extend({
 		__name__ : 'CBI.BlockInetStatus',
 
-		__init__ : function(map, section, ctx) {
+		__init__(map, section, ctx) {
 			this.map      = map;
 			this.section  = section;
 			this.ctx      = ctx;
@@ -326,7 +320,7 @@ return view.extend({
 			this.rmempty  = true;
 		},
 
-		renderWidget: function(section_id, option_index, cfgvalue) {
+		renderWidget(section_id, option_index, cfgvalue) {
 			this.ctx.setInternetStatus();
 
 			return E([
@@ -340,7 +334,7 @@ return view.extend({
 	CBIBlockServiceStatus: form.Value.extend({
 		__name__ : 'CBI.BlockServiceStatus',
 
-		__init__ : function(map, section, ctx) {
+		__init__(map, section, ctx) {
 			this.map      = map;
 			this.section  = section;
 			this.ctx      = ctx;
@@ -348,7 +342,7 @@ return view.extend({
 			this.rmempty  = true;
 		},
 
-		renderWidget: function(section_id, option_index, cfgvalue) {
+		renderWidget(section_id, option_index, cfgvalue) {
 			return E([
 				E('label', { 'class': 'cbi-value-title', 'for': 'serviceStatusLabel' },
 					_('Service')
@@ -363,7 +357,7 @@ return view.extend({
 	CBIBlockInitButton: form.Value.extend({
 		__name__ : 'CBI.BlockInitButton',
 
-		__init__ : function(map, section, ctx) {
+		__init__(map, section, ctx) {
 			this.map      = map;
 			this.section  = section;
 			this.ctx      = ctx;
@@ -371,7 +365,7 @@ return view.extend({
 			this.rmempty  = true;
 		},
 
-		renderWidget: function(section_id, option_index, cfgvalue) {
+		renderWidget(section_id, option_index, cfgvalue) {
 			this.ctx.initButton = E('button', {
 				'class': (!this.ctx.initStatus) ? btnStyleDisabled : btnStyleEnabled,
 				'click': ui.createHandlerFn(this, () => {
@@ -413,7 +407,7 @@ return view.extend({
 	CBIBlockFileEdit: form.Value.extend({
 		__name__ : 'CBI.BlockFileEdit',
 
-		__init__ : function(map, section, ctx, id, file, title, description, callback) {
+		__init__(map, section, ctx, id, file, title, description, callback) {
 			this.map         = map;
 			this.section     = section;
 			this.ctx         = ctx;
@@ -427,11 +421,11 @@ return view.extend({
 			this.content     = '';
 		},
 
-		cfgvalue: function(section_id, option) {
+		cfgvalue(section_id, option) {
 			return this.content;
 		},
 
-		formvalue: function(section_id) {
+		formvalue(section_id) {
 			let value    = this.content;
 			let textarea = document.getElementById('widget.file_edit.content.' + this.id);
 			if(textarea) {
@@ -440,7 +434,7 @@ return view.extend({
 			return value;
 		},
 
-		write: function(section_id, formvalue) {
+		write(section_id, formvalue) {
 			return fs.write(this.file, formvalue).then(rc => {
 				ui.addNotification(null, E('p', _('Contents have been saved.')),
 					'info');
@@ -453,13 +447,13 @@ return view.extend({
 			});
 		},
 
-		load: function() {
+		load() {
 			return L.resolveDefault(fs.read(this.file), '').then(c => {
 				this.content = c;
 			});
 		},
 
-		renderWidget: function(section_id, option_index, cfgvalue) {
+		renderWidget(section_id, option_index, cfgvalue) {
 			return E('textarea', {
 				'id'        : 'widget.file_edit.content.' + this.id,
 				'class'     : 'cbi-input-textarea',
@@ -471,7 +465,7 @@ return view.extend({
 		},
 	}),
 
-	load: function() {
+	load() {
 		return Promise.all([
 			fs.exec(this.execPath, [ 'status' ]),
 			this.getInitStatus(),
@@ -484,7 +478,7 @@ return view.extend({
 		});
 	},
 
-	render: function(data) {
+	render(data) {
 		if(!data) {
 			return;
 		};
@@ -498,8 +492,6 @@ return view.extend({
 			this.mta = true;
 		};
 		this.currentAppMode      = uci.get(this.appName, 'config', 'mode');
-		this.uiCheckIntervalUp   = Number(uci.get(this.appName, 'ui', 'interval_up'));
-		this.uiCheckIntervalDown = Number(uci.get(this.appName, 'ui', 'interval_down'));
 
 		let s, o, ss;
 		let m = new form.Map(this.appName,
@@ -549,32 +541,27 @@ return view.extend({
 		);
 
 
-		s = m.section(form.NamedSection, 'config', 'main');
-
-
 		/* Service instances configuration */
 
-		s.tab('service', _('Service configuration'));
+		if(this.currentAppMode !== '2') {
 
-		// enable_logger
-		o = s.taboption('service', form.Flag, 'enable_logger',
-			_('Enable logging'),
-			_('Write messages to the system log.')
-		);
-		o.rmempty = false;
+			// enable_logger
+			o = s.option(form.Flag, 'enable_logger',
+				_('Enable logging'),
+				_('Write messages to the system log.')
+			);
+			o.rmempty = false;
+		};
 
-		o = s.taboption('service', form.SectionValue, 'instance', form.GridSection,
-			'instance'
-		);
-		ss = o.subsection;
+		s = m.section(form.GridSection, 'instance');
 
-		ss.title          = _('Service instances');
-		ss.addremove      = true;
-		ss.sortable       = true;
-		ss.nodescriptions = true;
-		ss.addbtntitle    = _('Add instance');
+		s.title          = _('Service instances');
+		s.addremove      = true;
+		s.sortable       = true;
+		s.nodescriptions = true;
+		s.addbtntitle    = _('Add instance');
 
-		ss.tab('main', _('Main settings'));
+		s.tab('main', _('Main settings'));
 
 		function makeIntervalOptions(list) {
 			list.value(2,   '2 '  + _('sec'));
@@ -591,7 +578,7 @@ return view.extend({
 		}
 
 		// enabled
-		o = ss.taboption('main', form.Flag, 'enabled',
+		o = s.taboption('main', form.Flag, 'enabled',
 			_('Enabled'),
 		);
 		o.rmempty   = false;
@@ -600,16 +587,17 @@ return view.extend({
 		o.modalonly = false;
 
 		// hosts
-		o = ss.taboption('main', form.DynamicList,
+		o = s.taboption('main', form.DynamicList,
 			'hosts', _('Hosts'),
 			_('Hosts to check Internet availability. Hosts are polled (in list order) until at least one of them responds.')
 		);
+		//o.datatype  = 'or(host,hostport)';
 		o.datatype = 'or(or(host,hostport),ipaddrport(1))';
 		o.default  = this.defaultHosts;
 		o.rmempty  = false;
 
 		// check_type
-		o = ss.taboption('main', form.ListValue,
+		o = s.taboption('main', form.ListValue,
 			'check_type', _('Check type'),
 			_('Host availability check type.')
 		);
@@ -619,7 +607,7 @@ return view.extend({
 		o.modalonly = true;
 
 		// tcp_port
-		o = ss.taboption('main', form.Value,
+		o = s.taboption('main', form.Value,
 			'tcp_port', _('TCP port'),
 			_('Default port value for TCP connections.')
 		);
@@ -629,7 +617,7 @@ return view.extend({
 		o.modalonly = true;
 
 		// icmp_packet_size
-		o = ss.taboption('main', form.ListValue,
+		o = s.taboption('main', form.ListValue,
 			'icmp_packet_size', _('ICMP packet data size'));
 		o.value(1,    _('Small: 1 byte'));
 		o.value(32,   _('Windows: 32 bytes'));
@@ -642,14 +630,14 @@ return view.extend({
 		o.modalonly = true;
 
 		// iface
-		o = ss.taboption('main', widgets.DeviceSelect,
+		o = s.taboption('main', widgets.DeviceSelect,
 			'iface', _('Interface'),
 			_('Network interface for Internet access. If not specified, the default interface is used.')
 		);
 		o.noaliases  = true;
 
 		// interval_up
-		o = ss.taboption('main', form.ListValue,
+		o = s.taboption('main', form.ListValue,
 			'interval_up', _('Alive interval'),
 			_('Hosts polling interval when the Internet is up.')
 		);
@@ -658,7 +646,7 @@ return view.extend({
 		makeIntervalOptions(o);
 
 		// interval_down
-		o = ss.taboption('main', form.ListValue,
+		o = s.taboption('main', form.ListValue,
 			'interval_down', _('Dead interval'),
 			_('Hosts polling interval when the Internet is down.')
 		);
@@ -667,7 +655,7 @@ return view.extend({
 		makeIntervalOptions(o);
 
 		// connection_attempts
-		o = ss.taboption('main', form.ListValue,
+		o = s.taboption('main', form.ListValue,
 			'connection_attempts', _('Connection attempts'),
 			_('Maximum number of attempts to connect to each host.')
 		);
@@ -680,7 +668,7 @@ return view.extend({
 		o.default = '2';
 
 		// connection_timeout
-		o = ss.taboption('main', form.ListValue,
+		o = s.taboption('main', form.ListValue,
 			'connection_timeout', _('Connection timeout'),
 			_('Maximum timeout for waiting for a response from the host.')
 		);
@@ -700,223 +688,232 @@ return view.extend({
 
 		/* Modules */
 
-		ss.tab('led_control', _('LED control'));
-		ss.tab('reboot_device', _('Reboot device'));
-		ss.tab('restart_network', _('Restart network'));
-		ss.tab('restart_modem', _('Restart modem'));
-		ss.tab('public_ip', _('Public IP address'));
-		ss.tab('email', _('Email notification'));
-		ss.tab('user_scripts', _('User scripts'));
+		if(this.currentAppMode !== '2') {
+			s.tab('led_control', _('LED control'));
+			s.tab('reboot_device', _('Reboot device'));
+			s.tab('restart_network', _('Restart network'));
+			s.tab('restart_modem', _('Restart modem'));
+		};
 
-		ss.addModalOptions = (s, section_id, ev) => {
+		s.tab('public_ip', _('Public IP address'));
 
-			// LED control
+		if(this.currentAppMode !== '2') {
+			s.tab('email', _('Email notification'));
+			s.tab('user_scripts', _('User scripts'));
+		};
 
-			o = s.taboption('led_control', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<div class="cbi-section-descr">' +
-					_('<abbr title="Light Emitting Diode">LED</abbr> indicates the Internet status.') +
-					'</div>';
-			o.modalonly = true;
+		s.addModalOptions = (s, section_id, ev) => {
 
-			if(this.leds.length > 0) {
-				this.leds.sort((a, b) => a.name > b.name);
+			if(this.currentAppMode !== '2') {
+
+				// LED control
+
+				o = s.taboption('led_control', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<div class="cbi-section-descr">' +
+						_('<abbr title="Light Emitting Diode">LED</abbr> indicates the Internet status.') +
+						'</div>';
+				o.modalonly = true;
+
+				if(this.leds.length > 0) {
+					this.leds.sort((a, b) => a.name > b.name);
+
+					// enabled
+					o = s.taboption('led_control', form.Flag, 'mod_led_control_enabled',
+						_('Enabled'));
+					o.rmempty = false;
+					o.modalonly = true;
+
+					// led_name
+					o = s.taboption('led_control', form.ListValue, 'mod_led_control_led_name',
+						_('<abbr title="Light Emitting Diode">LED</abbr> Name'));
+					o.depends({ mod_led_control_enabled: '1' });
+					o.modalonly = true;
+					this.leds.forEach(e => o.value(e.name));
+
+					// led_action_1
+					o = s.taboption('led_control', form.ListValue, 'mod_led_control_led_action_1',
+						_('Action when connected'));
+					o.depends({ mod_led_control_enabled: '1' });
+					o.modalonly = true;
+					o.value(1, _('Off'));
+					o.value(2, _('On'));
+					o.value(3, _('Blink'));
+					o.default = '2';
+
+					// led_action_2
+					o = s.taboption('led_control', form.ListValue, 'mod_led_control_led_action_2',
+						_('Action when disconnected'));
+					o.depends({ mod_led_control_enabled: '1' });
+					o.modalonly = true;
+					o.value(1, _('Off'));
+					o.value(2, _('On'));
+					o.value(3, _('Blink'));
+					o.default = '1';
+				} else {
+					o = s.taboption('led_control', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
+						_('No <abbr title="Light Emitting Diode">LED</abbr>s available...') +
+						'</em></div>';
+					o.modalonly = true;
+				};
+
+				// Reboot device
+
+				o = s.taboption('reboot_device', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<div class="cbi-section-descr">' +
+						_('Device will be rebooted when the Internet is disconnected.') +
+						'</div>';
+				o.modalonly = true;
 
 				// enabled
-				o = s.taboption('led_control', form.Flag, 'mod_led_control_enabled',
+				o = s.taboption('reboot_device', form.Flag, 'mod_reboot_enabled',
 					_('Enabled'));
 				o.rmempty = false;
 				o.modalonly = true;
 
-				// led_name
-				o = s.taboption('led_control', form.ListValue, 'mod_led_control_led_name',
-					_('<abbr title="Light Emitting Diode">LED</abbr> Name'));
-				o.depends({ mod_led_control_enabled: '1' });
+				// dead_period
+				o = s.taboption('reboot_device', this.CBITimeInput,
+					'mod_reboot_dead_period', _('Dead period'),
+					_('Longest period of time without Internet access until the device is rebooted.')
+				);
+				o.default   = '3600';
+				o.rmempty   = false;
 				o.modalonly = true;
-				this.leds.forEach(e => o.value(e.name));
 
-				// led_action_1
-				o = s.taboption('led_control', form.ListValue, 'mod_led_control_led_action_1',
-					_('Action when connected'));
-				o.depends({ mod_led_control_enabled: '1' });
+				// force_reboot_delay
+				o = s.taboption('reboot_device', form.ListValue,
+					'mod_reboot_force_reboot_delay', _('Forced reboot delay'),
+					_('Waiting for a reboot to complete before performing a forced reboot.')
+				);
 				o.modalonly = true;
-				//o.value(0, _('Nothing'));
-				o.value(1, _('Off'));
-				o.value(2, _('On'));
-				o.value(3, _('Blink'));
-				o.default = '2';
+				o.value(0,    _('Disable forced reboot'));
+				o.value(60,   '1 ' + _('min'));
+				o.value(120,  '2 ' + _('min'));
+				o.value(300,  '5 ' + _('min'));
+				o.value(600,  '10 ' + _('min'));
+				o.value(1800, '30 ' + _('min'));
+				o.value(3600, '1 ' + _('hour'));
+				o.default = '300';
 
-				// led_action_2
-				o = s.taboption('led_control', form.ListValue, 'mod_led_control_led_action_2',
-					_('Action when disconnected'));
-				o.depends({ mod_led_control_enabled: '1' });
+				// Restart network
+
+				o = s.taboption('restart_network', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<div class="cbi-section-descr">' +
+						_('Network will be restarted when the Internet is disconnected.') +
+						'</div>';
 				o.modalonly = true;
-				o.value(1, _('Off'));
-				o.value(2, _('On'));
-				o.value(3, _('Blink'));
-				o.default = '1';
-			} else {
-				o = s.taboption('led_control', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
-					_('No <abbr title="Light Emitting Diode">LED</abbr>s available...') +
-					'</em></div>';
-				o.modalonly = true;
-			};
-
-			// Reboot device
-
-			o = s.taboption('reboot_device', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<div class="cbi-section-descr">' +
-					_('Device will be rebooted when the Internet is disconnected.') +
-					'</div>';
-			o.modalonly = true;
-
-			// enabled
-			o = s.taboption('reboot_device', form.Flag, 'mod_reboot_enabled',
-				_('Enabled'));
-			o.rmempty = false;
-			o.modalonly = true;
-
-			// dead_period
-			o = s.taboption('reboot_device', this.CBITimeInput,
-				'mod_reboot_dead_period', _('Dead period'),
-				_('Longest period of time without Internet access until the device is rebooted.')
-			);
-			o.default   = '3600';
-			o.rmempty   = false;
-			o.modalonly = true;
-
-			// force_reboot_delay
-			o = s.taboption('reboot_device', form.ListValue,
-				'mod_reboot_force_reboot_delay', _('Forced reboot delay'),
-				_('Waiting for a reboot to complete before performing a forced reboot.')
-			);
-			o.modalonly = true;
-			o.value(0,    _('Disable forced reboot'));
-			o.value(60,   '1 ' + _('min'));
-			o.value(120,  '2 ' + _('min'));
-			o.value(300,  '5 ' + _('min'));
-			o.value(600,  '10 ' + _('min'));
-			o.value(1800, '30 ' + _('min'));
-			o.value(3600, '1 ' + _('hour'));
-			o.default = '300';
-
-			// Restart network
-
-			o = s.taboption('restart_network', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<div class="cbi-section-descr">' +
-					_('Network will be restarted when the Internet is disconnected.') +
-					'</div>';
-			o.modalonly = true;
-
-			// enabled
-			o = s.taboption('restart_network', form.Flag, 'mod_network_restart_enabled',
-				_('Enabled'));
-			o.rmempty = false;
-			o.modalonly = true;
-
-			// dead_period
-			o = s.taboption('restart_network', this.CBITimeInput,
-				'mod_network_restart_dead_period', _('Dead period'),
-				_('Longest period of time without Internet access before network restart.')
-			);
-			o.default   = '900';
-			o.rmempty   = false;
-			o.modalonly = true;
-
-			// attempts
-			o = s.taboption('restart_network', form.ListValue,
-				'mod_network_restart_attempts', _('Restart attempts'),
-				_('Maximum number of network restart attempts before Internet access is available.')
-			);
-			o.modalonly = true;
-			o.value(1);
-			o.value(2);
-			o.value(3);
-			o.value(4);
-			o.value(5);
-			o.default = '1';
-
-			// iface
-			o = s.taboption('restart_network', widgets.DeviceSelect, 'mod_network_restart_iface',
-				_('Interface'),
-				_('Network interface to restart. If not specified, then the network service is restarted.')
-			);
-			o.modalonly = true;
-
-			// restart_timeout
-			o = s.taboption('restart_network', form.ListValue,
-				'mod_network_restart_restart_timeout', _('Restart timeout'),
-				_('Timeout between stopping and starting the interface.')
-			);
-			o.modalonly = true;
-			o.value(0,  '0 ' + _('sec'));
-			o.value(1,  '1 ' + _('sec'));
-			o.value(2,  '2 ' + _('sec'));
-			o.value(3,  '3 ' + _('sec'));
-			o.value(4,  '4 ' + _('sec'));
-			o.value(5,  '5 ' + _('sec'));
-			o.value(6,  '6 ' + _('sec'));
-			o.value(7,  '7 ' + _('sec'));
-			o.value(8,  '8 ' + _('sec'));
-			o.value(9,  '9 ' + _('sec'));
-			o.value(10, '10 ' + _('sec'));
-			o.default = '0';
-
-			// Restart modem
-
-			o = s.taboption('restart_modem', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<div class="cbi-section-descr">' +
-					_('Modem will be restarted when the Internet is disconnected.') +
-					'</div>';
-			o.modalonly = true;
-
-			if(this.mm) {
 
 				// enabled
-				o = s.taboption('restart_modem', form.Flag, 'mod_modem_restart_enabled',
-					_('Enabled'),
-				);
-				o.rmempty   = false;
+				o = s.taboption('restart_network', form.Flag, 'mod_network_restart_enabled',
+					_('Enabled'));
+				o.rmempty = false;
 				o.modalonly = true;
 
 				// dead_period
-				o = s.taboption('restart_modem', this.CBITimeInput,
-					'mod_modem_restart_dead_period', _('Dead period'),
-					_('Longest period of time without Internet access before modem restart.')
+				o = s.taboption('restart_network', this.CBITimeInput,
+					'mod_network_restart_dead_period', _('Dead period'),
+					_('Longest period of time without Internet access before network restart.')
 				);
-				o.default   = '600';
+				o.default   = '900';
 				o.rmempty   = false;
 				o.modalonly = true;
 
-				// any_band
-				o = s.taboption('restart_modem', form.Flag,
-					'mod_modem_restart_any_band', _('Unlock modem bands'),
-					_('Set the modem to be allowed to use any band.')
+				// attempts
+				o = s.taboption('restart_network', form.ListValue,
+					'mod_network_restart_attempts', _('Restart attempts'),
+					_('Maximum number of network restart attempts before Internet access is available.')
 				);
-				o.rmempty   = false;
 				o.modalonly = true;
+				o.value(1);
+				o.value(2);
+				o.value(3);
+				o.value(4);
+				o.value(5);
+				o.default = '1';
 
 				// iface
-				o = s.taboption('restart_modem', widgets.NetworkSelect, 'mod_modem_restart_iface',
+				o = s.taboption('restart_network', widgets.DeviceSelect, 'mod_network_restart_iface',
 					_('Interface'),
-					_('ModemManger interface. If specified, it will be restarted after restarting ModemManager.')
+					_('Network interface to restart. If not specified, then the network service is restarted.')
 				);
-				o.multiple = false;
-				o.nocreate = true;
 				o.modalonly = true;
 
-			} else {
-				o         = s.taboption('restart_modem', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
-					_('ModemManager is not available...') +
-					'</em></div>';
+				// restart_timeout
+				o = s.taboption('restart_network', form.ListValue,
+					'mod_network_restart_restart_timeout', _('Restart timeout'),
+					_('Timeout between stopping and starting the interface.')
+				);
 				o.modalonly = true;
+				o.value(0,  '0 ' + _('sec'));
+				o.value(1,  '1 ' + _('sec'));
+				o.value(2,  '2 ' + _('sec'));
+				o.value(3,  '3 ' + _('sec'));
+				o.value(4,  '4 ' + _('sec'));
+				o.value(5,  '5 ' + _('sec'));
+				o.value(6,  '6 ' + _('sec'));
+				o.value(7,  '7 ' + _('sec'));
+				o.value(8,  '8 ' + _('sec'));
+				o.value(9,  '9 ' + _('sec'));
+				o.value(10, '10 ' + _('sec'));
+				o.default = '0';
+
+				// Restart modem
+
+				o = s.taboption('restart_modem', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<div class="cbi-section-descr">' +
+						_('Modem will be restarted when the Internet is disconnected.') +
+						'</div>';
+				o.modalonly = true;
+
+				if(this.mm) {
+
+					// enabled
+					o = s.taboption('restart_modem', form.Flag, 'mod_modem_restart_enabled',
+						_('Enabled'),
+					);
+					o.rmempty   = false;
+					o.modalonly = true;
+
+					// dead_period
+					o = s.taboption('restart_modem', this.CBITimeInput,
+						'mod_modem_restart_dead_period', _('Dead period'),
+						_('Longest period of time without Internet access before modem restart.')
+					);
+					o.default   = '600';
+					o.rmempty   = false;
+					o.modalonly = true;
+
+					// any_band
+					o = s.taboption('restart_modem', form.Flag,
+						'mod_modem_restart_any_band', _('Unlock modem bands'),
+						_('Set the modem to be allowed to use any band.')
+					);
+					o.rmempty   = false;
+					o.modalonly = true;
+
+					// iface
+					o = s.taboption('restart_modem', widgets.NetworkSelect, 'mod_modem_restart_iface',
+						_('Interface'),
+						_('ModemManger interface. If specified, it will be restarted after restarting ModemManager.')
+					);
+					o.multiple = false;
+					o.nocreate = true;
+					o.modalonly = true;
+
+				} else {
+					o         = s.taboption('restart_modem', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
+						_('ModemManager is not available...') +
+						'</em></div>';
+					o.modalonly = true;
+				};
+
 			};
 
 			// Public IP address
@@ -978,270 +975,173 @@ return view.extend({
 			);
 			o.default   = '3'
 			o.modalonly = true;
-			for(let i=1; i<=5; i++) {
+			for(let i = 1; i <= 5; i++) {
 				o.value(i, i + ' ' + _('sec'));
 			};
 
-			// enable_ip_script
-			o = s.taboption('public_ip', form.Flag, 'mod_public_ip_enable_ip_script',
-				_('Enable public-ip-script'));
-			o.rmempty   = false;
-			o.modalonly = true;
+			if(this.currentAppMode !== '2') {
 
-			// public-ip-script edit dialog
-			o = s.taboption('public_ip', this.CBIBlockFileEdit, this,
-				'public-ip-script',
-				this.configDir + '/public-ip-script.' + s.section,
-				_('Edit public-ip-script'),
-				_('Shell commands that run when the public IP address changes. New IP is available as value of the <code>$PUBLIC_IP</code> variable (empty string if undefined).')
-			);
-			o.modalonly = true;
+				// enable_ip_script
+				o = s.taboption('public_ip', form.Flag, 'mod_public_ip_enable_ip_script',
+					_('Enable public-ip-script'));
+				o.rmempty   = false;
+				o.modalonly = true;
 
-			// Email notification
+				// public-ip-script edit dialog
+				o = s.taboption('public_ip', this.CBIBlockFileEdit, this,
+					'public-ip-script',
+					this.configDir + '/public-ip-script.' + s.section,
+					_('Edit public-ip-script'),
+					_('Shell commands that run when the public IP address changes. New IP is available as value of the <code>$PUBLIC_IP</code> variable (empty string if undefined).')
+				);
+				o.modalonly = true;
 
-			o = s.taboption('email', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<div class="cbi-section-descr">' +
-					_('An email will be sent when the internet connection is restored after being disconnected.') +
-					'</div>';
-			o.modalonly = true;
 
-			if(this.mta) {
+				// Email notification
+
+				o = s.taboption('email', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<div class="cbi-section-descr">' +
+						_('An email will be sent when the internet connection is restored after being disconnected.') +
+						'</div>';
+				o.modalonly = true;
+
+				if(this.mta) {
+
+					// enabled
+					o = s.taboption('email', form.Flag, 'mod_email_enabled',
+						_('Enabled'));
+					o.rmempty = false;
+					o.modalonly = true;
+
+					// alive_period
+					o = s.taboption('email', this.CBITimeInput,
+						'mod_email_alive_period', _('Alive period'),
+						_('Longest period of time after connecting to the Internet before sending a message.')
+					);
+					o.rmempty = false;
+					o.modalonly = true;
+
+					// host_alias
+					o = s.taboption('email', form.Value, 'mod_email_host_alias',
+						_('Host alias'),
+						_('Host identifier in messages. If not specified, hostname will be used.'));
+					o.modalonly = true;
+
+					// mail_recipient
+					o = s.taboption('email', form.Value,
+						'mod_email_mail_recipient', _('Recipient'));
+					o.description = _('Email address of the recipient.');
+					o.modalonly   = true;
+
+					// mail_sender
+					o = s.taboption('email', form.Value,
+						'mod_email_mail_sender', _('Sender'));
+					o.description = _('Email address of the sender.');
+					o.modalonly   = true;
+
+					// mail_user
+					o = s.taboption('email', form.Value,
+						'mod_email_mail_user', _('User'));
+					o.description = _('Username for SMTP authentication.');
+					o.modalonly   = true;
+
+					// mail_password
+					o = s.taboption('email', form.Value,
+						'mod_email_mail_password', _('Password'));
+					o.description = _('Password for SMTP authentication.');
+					o.password    = true;
+					o.modalonly   = true;
+
+					// mail_smtp
+					o = s.taboption('email', form.Value,
+						'mod_email_mail_smtp', _('SMTP server'));
+					o.description = _('Hostname/IP address of the SMTP server.');
+					o.datatype    = 'host';
+					o.default     = 'smtp.gmail.com';
+					o.modalonly   = true;
+
+					// mail_smtp_port
+					o = s.taboption('email', form.Value,
+						'mod_email_mail_smtp_port', _('SMTP server port'));
+					o.datatype    = 'port';
+					o.default   = '587';
+					o.modalonly = true;
+
+					// mail_security
+					o = s.taboption('email', form.ListValue,
+						'mod_email_mail_security', _('Security'));
+					o.description = '%s<br />%s'.format(
+						_('TLS: use STARTTLS if the server supports it.'),
+						_('SSL: SMTP over SSL.'),
+					);
+					o.value('tls', 'TLS');
+					o.value('ssl', 'SSL');
+					o.default   = 'tls';
+					o.modalonly = true;
+
+				} else {
+					o         = s.taboption('email', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
+						_('Mailsend is not available...') +
+						'</em></div>';
+					o.modalonly = true;
+				};
+
+				// User scripts
+
+				o = s.taboption('user_scripts', form.DummyValue, '_dummy');
+					o.rawhtml = true;
+					o.default = '<div class="cbi-section-descr">' +
+						_('Shell commands to run when connected or disconnected from the Internet.') +
+						'</div>';
+				o.modalonly = true;
 
 				// enabled
-				o = s.taboption('email', form.Flag, 'mod_email_enabled',
+				o = s.taboption('user_scripts', form.Flag, 'mod_user_scripts_enabled',
 					_('Enabled'));
-				o.rmempty = false;
+				o.rmempty   = false;
+				o.modalonly = true;
+
+				// up_script edit dialog
+				o = s.taboption('user_scripts', this.CBIBlockFileEdit, this,
+					'up_script',
+					this.configDir + '/up-script.' + s.section,
+					_('Edit up-script'),
+					_('Shell commands that run when connected to the Internet.')
+				);
 				o.modalonly = true;
 
 				// alive_period
-				o = s.taboption('email', this.CBITimeInput,
-					'mod_email_alive_period', _('Alive period'),
-					_('Longest period of time after connecting to the Internet before sending a message.')
+				o = s.taboption('user_scripts', this.CBITimeInput,
+					'mod_user_scripts_alive_period', _('Alive period'),
+					_('Longest period of time after connecting to Internet before "up-script" runs.')
 				);
-				o.rmempty = false;
+				o.default   = '0';
+				o.rmempty   = false;
 				o.modalonly = true;
 
-				// host_alias
-				o = s.taboption('email', form.Value, 'mod_email_host_alias',
-					_('Host alias'),
-					_('Host identifier in messages. If not specified, hostname will be used.'));
-				o.modalonly = true;
-
-				// mail_recipient
-				o = s.taboption('email', form.Value,
-					'mod_email_mail_recipient', _('Recipient'));
-				o.description = _('Email address of the recipient.');
-				o.modalonly   = true;
-
-				// mail_sender
-				o = s.taboption('email', form.Value,
-					'mod_email_mail_sender', _('Sender'));
-				o.description = _('Email address of the sender.');
-				o.modalonly   = true;
-
-				// mail_user
-				o = s.taboption('email', form.Value,
-					'mod_email_mail_user', _('User'));
-				o.description = _('Username for SMTP authentication.');
-				o.modalonly   = true;
-
-				// mail_password
-				o = s.taboption('email', form.Value,
-					'mod_email_mail_password', _('Password'));
-				o.description = _('Password for SMTP authentication.');
-				o.password    = true;
-				o.modalonly   = true;
-
-				// mail_smtp
-				o = s.taboption('email', form.Value,
-					'mod_email_mail_smtp', _('SMTP server'));
-				o.description = _('Hostname/IP address of the SMTP server.');
-				o.datatype    = 'host';
-				o.default     = 'smtp.gmail.com';
-				o.modalonly   = true;
-
-				// mail_smtp_port
-				o = s.taboption('email', form.Value,
-					'mod_email_mail_smtp_port', _('SMTP server port'));
-				o.datatype    = 'port';
-				o.default   = '587';
-				o.modalonly = true;
-
-				// mail_security
-				o = s.taboption('email', form.ListValue,
-					'mod_email_mail_security', _('Security'));
-				o.description = '%s<br />%s'.format(
-					_('TLS: use STARTTLS if the server supports it.'),
-					_('SSL: SMTP over SSL.'),
+				// down_script edit dialog
+				o = s.taboption('user_scripts', this.CBIBlockFileEdit, this,
+					'down_script',
+					this.configDir + '/down-script.' + s.section,
+					_('Edit down-script'),
+					_('Shell commands to run when disconnected from the Internet.')
 				);
-				o.value('tls', 'TLS');
-				o.value('ssl', 'SSL');
-				o.default   = 'tls';
 				o.modalonly = true;
 
-			} else {
-				o         = s.taboption('email', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<label class="cbi-value-title"></label><div class="cbi-value-field"><em>' +
-					_('Mailsend is not available...') +
-					'</em></div>';
+				// dead_period
+				o = s.taboption('user_scripts', this.CBITimeInput,
+					'mod_user_scripts_dead_period', _('Dead period'),
+					_('Longest period of time after disconnecting from Internet before "down-script" runs.')
+				);
+				o.default   = '0';
+				o.rmempty   = false;
 				o.modalonly = true;
 			};
 
-			// User scripts
-
-			o = s.taboption('user_scripts', form.DummyValue, '_dummy');
-				o.rawhtml = true;
-				o.default = '<div class="cbi-section-descr">' +
-					_('Shell commands to run when connected or disconnected from the Internet.') +
-					'</div>';
-			o.modalonly = true;
-
-			// enabled
-			o = s.taboption('user_scripts', form.Flag, 'mod_user_scripts_enabled',
-				_('Enabled'));
-			o.rmempty   = false;
-			o.modalonly = true;
-
-			// up_script edit dialog
-			o = s.taboption('user_scripts', this.CBIBlockFileEdit, this,
-				'up_script',
-				this.configDir + '/up-script.' + s.section,
-				_('Edit up-script'),
-				_('Shell commands that run when connected to the Internet.')
-			);
-			o.modalonly = true;
-
-			// alive_period
-			o = s.taboption('user_scripts', this.CBITimeInput,
-				'mod_user_scripts_alive_period', _('Alive period'),
-				_('Longest period of time after connecting to Internet before "up-script" runs.')
-			);
-			o.default   = '0';
-			o.rmempty   = false;
-			o.modalonly = true;
-
-			// down_script edit dialog
-			o = s.taboption('user_scripts', this.CBIBlockFileEdit, this,
-				'down_script',
-				this.configDir + '/down-script.' + s.section,
-				_('Edit down-script'),
-				_('Shell commands to run when disconnected from the Internet.')
-			);
-			o.modalonly = true;
-
-			// dead_period
-			o = s.taboption('user_scripts', this.CBITimeInput,
-				'mod_user_scripts_dead_period', _('Dead period'),
-				_('Longest period of time after disconnecting from Internet before "down-script" runs.')
-			);
-			o.default   = '0';
-			o.rmempty   = false;
-			o.modalonly = true;
 		};
-
-
-		/* UI detector configuration */
-
-		s.tab('ui_detector', _('UI detector configuration'));
-
-		o = s.taboption('ui_detector', form.SectionValue,
-			'ui', form.NamedSection, 'ui'
-		);
-		ss = o.subsection;
-
-		let makeUIIntervalOptions = L.bind(function(list) {
-			list.value(1, '%d %s'.format(this.pollInterval, _('sec')));
-			list.value(2, '%d %s'.format(this.pollInterval * 2, _('sec')));
-			list.value(3, '%d %s'.format(this.pollInterval * 3, _('sec')));
-			list.value(4, '%d %s'.format(this.pollInterval * 4, _('sec')));
-			list.value(5, '%d %s'.format(this.pollInterval * 5, _('sec')));
-			list.value(6, '%d %s'.format(this.pollInterval * 6, _('sec')));
-		}, this);
-
-		// hosts
-		o = ss.option(form.DynamicList,
-			'hosts', _('Hosts'),
-			_('Hosts to check Internet availability. Hosts are polled (in list order) until at least one of them responds.')
-		);
-		o.datatype = 'or(or(host,hostport),ipaddrport(1))';
-		o.default  = this.defaultHosts;
-		o.rmempty  = false;
-
-		// check_type
-		o = ss.option(form.ListValue,
-			'check_type', _('Check type'),
-			_('Host availability check type.')
-		);
-		o.value(0, _('TCP port connection'));
-		o.value(1, _('ICMP-echo request (ping)'));
-		o.default = '0';
-
-		// tcp_port
-		o = ss.option(form.Value,
-			'tcp_port', _('TCP port'),
-			_('Default port value for TCP connections.')
-		);
-		o.datatype = 'port';
-		o.default  = '53';
-		o.depends({ check_type: '0' });
-
-		// icmp_packet_size
-		o = ss.option(form.ListValue,
-			'icmp_packet_size', _('ICMP packet data size'));
-		o.value(1,    _('Small: 1 byte'));
-		o.value(32,   _('Windows: 32 bytes'));
-		o.value(56,   _('Standard: 56 bytes'));
-		o.value(248,  _('Big: 248 bytes'));
-		o.value(1492, _('Huge: 1492 bytes'));
-		o.value(9000, _('Jumbo: 9000 bytes'));
-		o.default = '56';
-		o.depends({ check_type: '1' });
-
-		// iface
-		o = ss.option(widgets.DeviceSelect,
-			'iface', _('Interface'),
-			_('Network interface for Internet access. If not specified, the default interface is used.')
-		);
-		o.noaliases  = true;
-
-		// interval_up
-		o = ss.option(form.ListValue,
-			'interval_up', _('Alive interval'),
-			_('Hosts polling interval when the Internet is up.')
-		);
-		makeUIIntervalOptions(o);
-		o.default = '6';
-
-		// interval_down
-		o = ss.option(form.ListValue,
-			'interval_down', _('Dead interval'),
-			_('Hosts polling interval when the Internet is down.')
-		);
-		makeUIIntervalOptions(o);
-		o.default = '1';
-
-		// connection_attempts
-		o = ss.option(form.ListValue,
-			'connection_attempts', _('Connection attempts'),
-			_('Maximum number of attempts to connect to each host.')
-		);
-		o.value(1);
-		o.value(2);
-		o.value(3);
-		o.default = '1';
-
-		// connection_timeout
-		o = ss.option(form.ListValue,
-			'connection_timeout', _('Connection timeout'),
-			_('Maximum timeout for waiting for a response from the host.')
-		);
-		o.value(1, '1 ' + _('sec'));
-		o.value(2, '2 ' + _('sec'));
-		o.value(3, '3 ' + _('sec'));
-		o.default = '1';
-
 
 		if(this.currentAppMode !== '0') {
 			poll.add(
@@ -1255,7 +1155,7 @@ return view.extend({
 		return mapPromise;
 	},
 
-	handleSaveApply: function(ev, mode) {
+	handleSaveApply(ev, mode) {
 		poll.stop();
 		return this.handleSave(ev).then(() => {
 			ui.changes.apply(mode == '0');

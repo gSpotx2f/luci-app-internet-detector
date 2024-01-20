@@ -1,6 +1,7 @@
 'use strict';
 'require baseclass';
 'require fs';
+'require rpc';
 'require uci';
 
 document.head.append(E('style', {'type': 'text/css'},
@@ -57,14 +58,22 @@ return baseclass.extend({
 	title               : _('Internet'),
 	appName             : 'internet-detector',
 	execPath            : '/usr/bin/internet-detector',
-	uiCheckIntervalUp   : null,
-	uiCheckIntervalDown : null,
 	currentAppMode      : null,
 	inetStatus          : null,
-	uiState             : null,
-	counter             : 0,
 
-	inetStatusFromJson  : function(res) {
+	callUIPoll: rpc.declare({
+		object: 'luci.internet-detector',
+		method: 'UIPoll',
+		expect: { '': {} }
+	}),
+
+	getUIPoll() {
+		return this.callUIPoll().then(data => {
+			return data;
+		});
+	},
+
+	inetStatusFromJson(res) {
 		let inetStatData = null;
 		if(res.code === 0) {
 			try {
@@ -74,50 +83,38 @@ return baseclass.extend({
 		return inetStatData;
 	},
 
-	load: async function() {
-		if(!(this.uiCheckIntervalUp && this.uiCheckIntervalDown && this.currentAppMode)) {
+	async load() {
+		if(!this.currentAppMode) {
 			await uci.load(this.appName).then(data => {
-				this.uiCheckIntervalUp   = Number(uci.get(this.appName, 'ui', 'interval_up'));
-				this.uiCheckIntervalDown = Number(uci.get(this.appName, 'ui', 'interval_down'));
-				this.currentAppMode      = uci.get(this.appName, 'config', 'mode');
+				this.currentAppMode = uci.get(this.appName, 'config', 'mode');
 			}).catch(e => {});
 		};
 
 		if(this.currentAppMode === '2') {
-			this.counter++;
-
-			if((this.uiState === 0 && this.counter % this.uiCheckIntervalUp) ||
-				(this.uiState === 1 && this.counter % this.uiCheckIntervalDown)
-			) {
-				return;
-			};
-
-			this.counter = 0;
-			return L.resolveDefault(fs.exec(this.execPath, [ 'poll' ]), null);
+			return this.getUIPoll();
 		}
 		else if(this.currentAppMode === '1') {
 			return L.resolveDefault(fs.exec(this.execPath, [ 'inet-status' ]), null);
 		};
 	},
 
-	render: function(data) {
+	render(data) {
 		if(this.currentAppMode === '0') {
 			return;
+		}
+		else if(this.currentAppMode === '1' && data) {
+			data = this.inetStatusFromJson(data);
 		};
-
-		if(data) {
-			this.inetStatus = this.inetStatusFromJson(data);
-			if(this.currentAppMode === '2') {
-				this.uiState = this.inetStatus.instances[0].inet;
-			};
-		};
+		this.inetStatus = data;
 
 		let inetStatusArea = E('div', {});
 
 		if(!this.inetStatus || !this.inetStatus.instances || this.inetStatus.instances.length === 0) {
-			inetStatusArea.append(
-				E('span', { 'class': 'id-label-status id-undefined' }, _('Undefined'))
-			);
+			let label = E('span', { 'class': 'id-label-status id-undefined' }, _('Undefined'));
+			if(this.currentAppMode === '2') {
+				label.classList.add('spinning');
+			};
+			inetStatusArea.append(label);
 		} else {
 			this.inetStatus.instances.sort((a, b) => a.num > b.num);
 
@@ -139,8 +136,7 @@ return baseclass.extend({
 
 				inetStatusArea.append(
 					E('span', { 'class': className }, '%s%s%s'.format(
-						(this.currentAppMode === '1') ? i.instance + ': ' : '',
-						status, publicIp)
+						i.instance + ': ', status, publicIp)
 					)
 				);
 			};

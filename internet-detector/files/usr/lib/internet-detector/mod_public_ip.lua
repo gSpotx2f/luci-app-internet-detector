@@ -7,7 +7,8 @@ local Module = {
 	name              = "mod_public_ip",
 	runPrio           = 50,
 	config            = {
-		debug = false,
+		noModules = false,
+		debug     = false,
 		serviceConfig = {
 			iface = nil,
 		},
@@ -65,7 +66,7 @@ local Module = {
 }
 
 function Module:runIpScript()
-	if self.enableIpScript and unistd.access(self.ipScript, "r") then
+	if not self.config.noModules and self.enableIpScript and unistd.access(self.ipScript, "r") then
 		stdlib.setenv("PUBLIC_IP", self.status)
 		os.execute(string.format('/bin/sh "%s" &', self.ipScript))
 	end
@@ -247,8 +248,8 @@ function Module:decodeMessage(message)
 
 	local questionSectionStarts = 25
 	local questionParts = self:parseParts(message, questionSectionStarts, {})
-	local qtypeStarts  = questionSectionStarts + (#table.concat(questionParts)) + (#questionParts * 2) + 1
-	local qclassStarts = qtypeStarts + 4
+	local qtypeStarts   = questionSectionStarts + (#table.concat(questionParts)) + (#questionParts * 2) + 1
+	local qclassStarts  = qtypeStarts + 4
 
 	local answerSectionStarts = qclassStarts + 4
 	local numAnswers          = math.max(

@@ -1,11 +1,11 @@
 #
-# (с) 2023 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
+# (с) 2024 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
 #
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=internet-detector
-PKG_VERSION:=1.1
+PKG_VERSION:=1.2
 PKG_RELEASE:=0
 PKG_MAINTAINER:=gSpot <https://github.com/gSpotx2f/luci-app-internet-detector>
 

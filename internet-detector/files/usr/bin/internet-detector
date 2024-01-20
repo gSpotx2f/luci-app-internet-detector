@@ -8,7 +8,7 @@
 		luaposix
 		libuci-lua
 
-	(с) 2023 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
+	(с) 2024 gSpot (https://github.com/gSpotx2f/luci-app-internet-detector)
 --]]
 
 -- Importing packages
@@ -26,15 +26,18 @@ local uci    = require("uci")
 -- Default settings
 
 local InternetDetector = {
-	mode          = 0,
-	enableLogger  = true,
-	hostname      = "OpenWrt",
-	appName       = "internet-detector",
-	commonDir     = "/tmp/run",
-	pingCmd       = "/bin/ping",
-	pingParams    = "-c 1",
-	debug         = false,
-	serviceConfig = {
+	mode           = 0,		-- 0: disabled, 1: Service, 2: UI detector
+	enableLogger   = true,
+	hostname       = "OpenWrt",
+	appName        = "internet-detector",
+	commonDir      = "/tmp/run",
+	pingCmd        = "/bin/ping",
+	pingParams     = "-c 1",
+	uiRunTime      = 30,
+	noModules      = false,
+	uiAvailModules = { mod_public_ip = true },
+	debug          = false,
+	serviceConfig  = {
 		hosts = {
 			[1] = "8.8.8.8",
 			[2] = "1.1.1.1",
@@ -49,13 +52,15 @@ local InternetDetector = {
 		iface               = nil,
 		instance            = nil,
 	},
-	modules      = {},
-	parsedHosts  = {},
+	modules       = {},
+	parsedHosts   = {},
+	uiCounter     = 0,
 }
 InternetDetector.configDir  = string.format("/etc/%s", InternetDetector.appName)
 InternetDetector.modulesDir = string.format("/usr/lib/%s", InternetDetector.appName)
 
 -- Loading settings from UCI
+
 local uciCursor               = uci.cursor()
 InternetDetector.mode         = tonumber(
 	uciCursor:get(InternetDetector.appName, "config", "mode"))
@@ -161,22 +166,25 @@ function InternetDetector:loadModules()
 	if ok then
 		for item in modulesDir do
 			if item:match("^mod_") then
-				local modName   = item:gsub("%.lua$", "")
-				local modConfig = {}
-				for k, v in pairs(self.serviceConfig) do
-					if k:match("^" .. modName) then
-						modConfig[k:gsub("^" .. modName .. "_", "")] = v
+				local modName = item:gsub("%.lua$", "")
+				if self.noModules and not self.uiAvailModules[modName] then
+				else
+					local modConfig = {}
+					for k, v in pairs(self.serviceConfig) do
+						if k:match("^" .. modName) then
+							modConfig[k:gsub("^" .. modName .. "_", "")] = v
+						end
 					end
-				end
-				if modConfig.enabled == 1 then
-					local m = self:prequire(modName)
-					if m then
-						m.config     = self
-						m.syslog     = function(level, msg) self:writeLogMessage(level, msg) end
-						m.writeValue = function(filePath, str) return self:writeValueToFile(filePath, str) end
-						m.readValue  = function(filePath) return self:readValueFromFile(filePath) end
-						m:init(modConfig)
-						self.modules[#self.modules + 1] = m
+					if modConfig.enabled == 1 then
+						local m = self:prequire(modName)
+						if m then
+							m.config     = self
+							m.syslog     = function(level, msg) self:writeLogMessage(level, msg) end
+							m.writeValue = function(filePath, str) return self:writeValueToFile(filePath, str) end
+							m.readValue  = function(filePath) return self:readValueFromFile(filePath) end
+							m:init(modConfig)
+							self.modules[#self.modules + 1] = m
+						end
 					end
 				end
 			end
@@ -213,7 +221,6 @@ function InternetDetector:pingHost(host)
 	)
 	local retCode = os.execute(ping)
 
-	-- Debug
 	if self.debug then
 		io.stdout:write(string.format(
 			"--- Ping ---\ntime = %s\n%s\nretCode = %s\n", os.time(), ping, retCode)
@@ -329,15 +336,20 @@ function InternetDetector:breakMain(signo)
 	RUNNING = false
 end
 
+function InternetDetector:resetUiCounter(signo)
+	self.uiCounter = 0
+end
+
 function InternetDetector:main()
 	signal.signal(signal.SIGTERM, function(signo) self:breakMain(signo) end)
 	signal.signal(signal.SIGINT, function(signo) self:breakMain(signo) end)
 	signal.signal(signal.SIGQUIT, function(signo) self:breakMain(signo) end)
+	signal.signal(signal.SIGUSR1, function(signo) self:resetUiCounter(signo) end)
 
-	local lastStatus, currentStatus, timeNow, timeDiff, lastTime
-	local interval = self.serviceConfig.interval_up
-	local counter  = 0
-	local onStart  = true
+	local lastStatus, currentStatus, mTimeNow, mTimeDiff, mLastTime, uiTimeNow, uiLastTime
+	local interval  = self.serviceConfig.interval_up
+	local counter   = 0
+	local onStart   = true
 	RUNNING        = true
 	while RUNNING do
 		if counter == 0 or counter >= interval then
@@ -367,16 +379,16 @@ function InternetDetector:main()
 			counter = 0
 		end
 
-		timeDiff = 0
+		mTimeDiff = 0
 		for _, e in ipairs(self.modules) do
-			timeNow = time.clock_gettime(time.CLOCK_MONOTONIC).tv_sec
-			if lastTime then
-				timeDiff = timeDiff + timeNow - lastTime
+			mTimeNow = time.clock_gettime(time.CLOCK_MONOTONIC).tv_sec
+			if mLastTime then
+				mTimeDiff = mTimeDiff + mTimeNow - mLastTime
 			else
-				timeDiff = 1
+				mTimeDiff = 1
 			end
-			lastTime = timeNow
-			e:run(currentStatus, lastStatus, timeDiff)
+			mLastTime = mTimeNow
+			e:run(currentStatus, lastStatus, mTimeDiff)
 		end
 
 		local modulesStatus = {}
@@ -392,7 +404,20 @@ function InternetDetector:main()
 
 		lastStatus = currentStatus
 		unistd.sleep(1)
-		counter    = counter + 1
+		counter = counter + 1
+
+		if self.mode == 2 then
+			uiTimeNow = time.clock_gettime(time.CLOCK_MONOTONIC).tv_sec
+			if uiLastTime then
+				self.uiCounter = self.uiCounter + uiTimeNow - uiLastTime
+			else
+				self.uiCounter = self.uiCounter + 1
+			end
+			uiLastTime = uiTimeNow
+			if self.uiCounter >= self.uiRunTime then
+				self:breakMain(signal.SIGTERM)
+			end
+		end
 	end
 end
 
@@ -490,13 +515,27 @@ function InternetDetector:stop()
 			break
 		end
 	end
+end
 
+function InternetDetector:setSIGUSR()
+	local appName = self.appName:gsub("-", "%%-")
+	local ok, commonDir = pcall(dirent.files, self.commonDir)
+	if ok then
+		for item in commonDir do
+			if item:match("^" .. appName .. ".-%.pid$") then
+				pidValue = self:readValueFromFile(string.format("%s/%s", self.commonDir, item))
+				if pidValue then
+					signal.kill(tonumber(pidValue), signal.SIGUSR1)
+				end
+			end
+		end
+	end
 end
 
 function InternetDetector:preRun()
-	-- Exit if internet-detector mode != 1(Service)
-	if self.mode ~= 1 then
-		io.stderr:write(string.format('Start failed, mode != 1\n', self.appName))
+	-- Exit if internet-detector mode != (1 or 2)
+	if self.mode ~= 1 and self.mode ~= 2 then
+		io.stderr:write(string.format('Start failed, mode != (1 or 2)\n', self.appName))
 		os.exit(0)
 	end
 	if stat.stat(self.pidFile) then
@@ -528,7 +567,6 @@ function InternetDetector:run()
 		)
 	end
 
-	-- Debug
 	if self.debug then
 		local function inspectTable()
 			local tables = {}, f
@@ -597,6 +635,10 @@ end
 function InternetDetector:setServiceConfig(instance)
 	if self:loadUCIConfig("instance", instance) then
 		self:parseHosts()
+		if self.mode == 2 then
+			self.enableLogger = false
+			self.noModules    = true
+		end
 		return true
 	end
 end
@@ -605,12 +647,12 @@ end
 
 local function help()
 	return string.format(
-		"Usage: %s service <UCI instance> | nodaemon <UCI instance> | debug <UCI instance> | stop | status | inet-status | poll [<attempts num>] [<timeout sec>] | --help",
+		"Usage: %s service <UCI instance> | nodaemon <UCI instance> | debug <UCI instance> | stop | status | inet-status | uipoll | --help",
 		arg[0]
 	)
 end
 
-local helpArgs = { ["-h"] = true, ["--help"] = true, ["help"] = true }
+local helpArgs = { ["-h"] = true, ["--help"] = true, help = true }
 if arg[1] == "service" then
 	if arg[2] then
 		if InternetDetector:setServiceConfig(arg[2]) then
@@ -651,20 +693,12 @@ elseif arg[1] == "status" then
 	print(InternetDetector:status())
 elseif arg[1] == "inet-status" then
 	print(InternetDetector:inetStatus())
-elseif arg[1] == "poll" then
-	if InternetDetector:loadUCIConfig("ui", "ui") then
-		InternetDetector:parseHosts()
-
-		if arg[2] and arg[2]:match("[0-9]+") then
-			InternetDetector.serviceConfig.connection_attempts = tonumber(arg[2])
-			if arg[3] and arg[3]:match("[0-9]+") then
-				InternetDetector.serviceConfig.connection_timeout = tonumber(arg[3])
-			end
-		end
-
-		print(InternetDetector:poll())
-	else
+elseif arg[1] == "uipoll" then
+	if InternetDetector:status() == "stoped" then
 		os.exit(126)
+	else
+		InternetDetector:setSIGUSR()
+		print(InternetDetector:inetStatus())
 	end
 elseif helpArgs[arg[1]] then
 	print(help())

@@ -404,9 +404,6 @@ msgstr ""
 msgid "Type a time string"
 msgstr ""
 
-msgid "UI detector configuration"
-msgstr ""
-
 msgid "Unable to read the contents"
 msgstr ""
 
