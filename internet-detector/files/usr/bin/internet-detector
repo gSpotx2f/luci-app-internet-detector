@@ -347,9 +347,9 @@ function InternetDetector:main()
 	signal.signal(signal.SIGUSR1, function(signo) self:resetUiCounter(signo) end)
 
 	local lastStatus, currentStatus, mTimeNow, mTimeDiff, mLastTime, uiTimeNow, uiLastTime
-	local interval  = self.serviceConfig.interval_up
-	local counter   = 0
-	local onStart   = true
+	local interval = self.serviceConfig.interval_up
+	local counter  = 0
+	local onStart  = true
 	RUNNING        = true
 	while RUNNING do
 		if counter == 0 or counter >= interval then
@@ -439,12 +439,6 @@ function InternetDetector:status()
 		end
 	end
 	return "stoped"
-end
-
-function InternetDetector:poll()
-	local retCode = self:checkHosts()
-	return string.format('{"instances":[%s]}', self:statusJson(
-		retCode, self.serviceConfig.instance))
 end
 
 function InternetDetector:inetStatus()
