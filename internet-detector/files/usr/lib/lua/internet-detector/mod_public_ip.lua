@@ -20,7 +20,6 @@ local Module = {
 	runInterval       = 600,
 	runIntervalFailed = 60,
 	timeout           = 3,
-	reqAttempts       = 3,
 	providers         = {
 		opendns1 = {
 			name = "opendns1", host = "myip.opendns.com",
@@ -333,13 +332,13 @@ function Module:resolveIP()
 end
 
 function Module:init(t)
-	if t.interval then
+	if t.interval ~= nil then
 		self.runInterval = tonumber(t.interval)
 	end
-	if t.timeout then
+	if t.timeout ~= nil then
 		self.timeout = tonumber(t.timeout)
 	end
-	if t.provider then
+	if t.provider ~= nil then
 		self._provider = self.providers[t.provider]
 	else
 		self._provider = self.providers.opendns1
@@ -347,11 +346,13 @@ function Module:init(t)
 	if self.config.configDir then
 		self.ipScript = string.format(
 			"%s/public-ip-script.%s", self.config.configDir, self.config.serviceConfig.instance)
-		if t.enable_ip_script then
+		if t.enable_ip_script ~= nil then
 			self.enableIpScript = (tonumber(t.enable_ip_script) ~= 0)
 		end
 	end
-	self._qtype = (tonumber(t.qtype) ~= 0)
+	if t.qtype ~= nil then
+		self._qtype = (tonumber(t.qtype) ~= 0)
+	end
 	self._currentIp = nil
 	self._DNSPacket = nil
 	self._interval  = self.runInterval

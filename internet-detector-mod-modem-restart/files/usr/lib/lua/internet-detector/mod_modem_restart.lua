@@ -13,7 +13,7 @@ local Module = {
 	readValue    = function(filePath) return nil end,
 	mmcli        = "/usr/bin/mmcli",
 	mmInit       = "/etc/init.d/modemmanager",
-	deadPeriod   = 0,
+	deadPeriod   = 600,
 	iface        = nil,
 	anyBand      = false,
 	status       = nil,
@@ -23,12 +23,21 @@ local Module = {
 }
 
 function Module:toggleIface(flag)
+	if not self.iface then
+		return
+	end
 	return os.execute(
 		string.format("%s %s", (flag and "/sbin/ifup" or "/sbin/ifdown"), self.iface)
 	)
 end
 
 function Module:restartMM()
+	if os.execute(string.format("%s enabled", self.mmInit)) ~= 0 then
+		self.syslog("warning", string.format(
+			"%s: modemmanager service is disabled", self.name))
+		return
+	end
+
 	if self.anyBand then
 		self.syslog("info", string.format(
 			"%s: resetting current-bands to 'any'", self.name))
@@ -47,15 +56,22 @@ function Module:restartMM()
 end
 
 function Module:init(t)
-	self.deadPeriod = tonumber(t.dead_period)
-	self.iface      = t.iface
-	self.anyBand    = (tonumber(t.any_band) ~= 0)
+	if t.dead_period ~= nil then
+		self.deadPeriod = tonumber(t.dead_period)
+	end
+	if t.iface ~= nil then
+		self.iface = t.iface
+	end
+	if t.any_band ~= nil then
+		self.anyBand = (tonumber(t.any_band) ~= 0)
+	end
 
 	if not unistd.access(self.mmcli, "x") then
 		self.anyBand = false
 	end
 
-	if unistd.access(self.mmInit, "x") then
+	if (unistd.access(self.mmInit, "x")
+		and os.execute(string.format("%s enabled", self.mmInit)) == 0) then
 		self._enabled = true
 	else
 		self._enabled = false

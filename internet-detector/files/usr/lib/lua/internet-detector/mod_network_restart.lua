@@ -8,9 +8,9 @@ local Module = {
 	syslog           = function(level, msg) return true end,
 	writeValue       = function(filePath, str) return false end,
 	readValue        = function(filePath) return nil end,
-	iface            = false,
-	attempts         = 0,
-	deadPeriod       = 0,
+	deadPeriod       = 900,
+	attempts         = 1,
+	iface            = nil,
 	restartTimeout   = 0,
 	status           = nil,
 	_attemptsCounter = 0,
@@ -22,6 +22,9 @@ function Module:toggleFunc(flag)
 end
 
 function Module:toggleDevice(flag)
+	if not self.iface then
+		return
+	end
 	local ip = "/sbin/ip"
 	if unistd.access(ip, "x") then
 		return os.execute(string.format(
@@ -31,6 +34,9 @@ function Module:toggleDevice(flag)
 end
 
 function Module:toggleIface(flag)
+	if not self.iface then
+		return
+	end
 	return os.execute(
 		string.format("%s %s", (flag and "/sbin/ifup" or "/sbin/ifdown"), self.iface)
 	)
@@ -59,9 +65,15 @@ function Module:init(t)
 			self.toggleFunc = self.toggleDevice
 		end
 	end
-	self.attempts       = tonumber(t.attempts)
-	self.deadPeriod     = tonumber(t.dead_period)
-	self.restartTimeout = tonumber(t.restart_timeout)
+	if t.attempts ~= nil then
+		self.attempts = tonumber(t.attempts)
+	end
+	if t.dead_period ~= nil then
+		self.deadPeriod = tonumber(t.dead_period)
+	end
+	if t.restart_timeout ~= nil then
+		self.restartTimeout = tonumber(t.restart_timeout)
+	end
 end
 
 function Module:run(currentStatus, lastStatus, timeDiff)

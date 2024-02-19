@@ -8,8 +8,8 @@ local Module = {
 	syslog           = function(level, msg) return true end,
 	writeValue       = function(filePath, str) return false end,
 	readValue        = function(filePath) return nil end,
-	deadPeriod       = 0,
-	forceRebootDelay = 0,
+	deadPeriod       = 3600,
+	forceRebootDelay = 300,
 	status           = nil,
 	_deadCounter     = 0,
 }
@@ -26,8 +26,12 @@ function Module:rebootDevice()
 end
 
 function Module:init(t)
-	self.deadPeriod       = tonumber(t.dead_period)
-	self.forceRebootDelay = tonumber(t.force_reboot_delay)
+	if t.dead_period ~= nil then
+		self.deadPeriod  = tonumber(t.dead_period)
+	end
+	if t.force_reboot_delay ~= nil then
+		self.forceRebootDelay = tonumber(t.force_reboot_delay)
+	end
 end
 
 function Module:run(currentStatus, lastStatus, timeDiff)

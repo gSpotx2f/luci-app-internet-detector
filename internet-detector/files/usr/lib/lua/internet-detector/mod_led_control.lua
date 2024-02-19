@@ -38,12 +38,17 @@ function Module:resetLeds()
 end
 
 function Module:init(t)
-	self.ledName = t.led_name
-	if not self.ledName then
+	if not t.led_name then
 		return
+	else
+		self.ledName = t.led_name
 	end
-	self.ledAction1            = tonumber(t.led_action_1)
-	self.ledAction2            = tonumber(t.led_action_2)
+	if t.led_action_1 ~= nil then
+		self.ledAction1 = tonumber(t.led_action_1)
+	end
+	if t.led_action_2 ~= nil then
+		self.ledAction2 = tonumber(t.led_action_2)
+	end
 	self._ledDir               = string.format("%s/%s", self.sysLedsDir, self.ledName)
 	self._ledMaxBrightnessFile = string.format("%s/max_brightness", self._ledDir)
 	self._ledBrightnessFile    = string.format("%s/brightness", self._ledDir)

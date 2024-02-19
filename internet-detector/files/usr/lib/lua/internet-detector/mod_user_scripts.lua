@@ -3,7 +3,7 @@ local unistd = require("posix.unistd")
 
 local Module = {
 	name                = "mod_user_scripts",
-	runPrio             = 70,
+	runPrio             = 80,
 	config              = {},
 	syslog              = function(level, msg) return true end,
 	writeValue          = function(filePath, str) return false end,
@@ -26,8 +26,12 @@ function Module:runExternalScript(scriptPath)
 end
 
 function Module:init(t)
-	self.deadPeriod  = tonumber(t.dead_period)
-	self.alivePeriod = tonumber(t.alive_period)
+	if t.dead_period ~= nil then
+		self.deadPeriod  = tonumber(t.dead_period)
+	end
+	if t.alive_period ~= nil then
+		self.alivePeriod = tonumber(t.alive_period)
+	end
 	if self.config.configDir then
 		self.upScript   = string.format(
 			"%s/up-script.%s", self.config.configDir, self.config.serviceConfig.instance)
