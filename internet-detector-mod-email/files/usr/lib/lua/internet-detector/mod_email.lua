@@ -29,6 +29,7 @@ local Module = {
 	mailSecurity       = "tls",
 	msgTextPattern1    = "[%s]: %s: %s",	-- Connected (host, instance, message)
 	msgTextPattern2    = "[%s]: %s: %s",	-- Disconnected (host, instance, message)
+	msgSubPattern      = "%s notification", -- Subject (host)
 	status             = nil,
 	_enabled           = false,
 	_deadCounter       = 0,
@@ -109,7 +110,7 @@ function Module:sendMessage(msg, textPattern)
 		self.mta, verboseArg, securityArgs, self.mailSmtp, self.mailSmtpPort,
 		self.mtaConnectTimeout, self.mtaReadTimeout,
 		self.mailUser, self.mailPassword, self.mailSender, self.mailRecipient,
-		string.format("%s notification", self.hostAlias),
+		string.format(self.msgSubPattern, self.hostAlias),
 		emailMsg)
 
 	-- Debug
