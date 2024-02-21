@@ -27,6 +27,8 @@ local Module = {
 	mailSmtp           = nil,
 	mailSmtpPort       = nil,
 	mailSecurity       = "tls",
+	msgTextPattern1    = "[%s]: %s: %s",	-- Connected (host, instance, message)
+	msgTextPattern2    = "[%s]: %s: %s",	-- Disconnected (host, instance, message)
 	status             = nil,
 	_enabled           = false,
 	_deadCounter       = 0,
@@ -85,8 +87,10 @@ function Module:init(t)
 	end
 end
 
-function Module:sendMessage(msg)
+function Module:sendMessage(msg, textPattern)
 	local verboseArg = ""
+	local emailMsg   = string.format(
+		textPattern, self.hostAlias, self.config.serviceConfig.instance, msg)
 
 	-- Debug
 	if self.config.debug then
@@ -106,7 +110,7 @@ function Module:sendMessage(msg)
 		self.mtaConnectTimeout, self.mtaReadTimeout,
 		self.mailUser, self.mailPassword, self.mailSender, self.mailRecipient,
 		string.format("%s notification", self.hostAlias),
-		string.format("[%s]: %s:\n%s", self.hostAlias, self.config.serviceConfig.instance, msg))
+		emailMsg)
 
 	-- Debug
 	if self.config.debug then
@@ -143,7 +147,7 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 		if not self._msgSentDisconnect and (self.mode == 1 or self.mode == 2) then
 			if self._deadCounter >= self.deadPeriod then
 				self._lastDisconnection = nil
-				self:sendMessage(table.concat(self._message, ", "))
+				self:sendMessage(table.concat(self._message, "; "), self.msgTextPattern2)
 				self._message           = {}
 				self._msgSentDisconnect = true
 			else
@@ -157,11 +161,10 @@ function Module:run(currentStatus, lastStatus, timeDiff)
 			if not self._lastConnection then
 				self._lastConnection = os.date("%Y.%m.%d %H:%M:%S", os.time())
 			end
-
 			if self._aliveCounter >= self.alivePeriod then
 				self._message[#self._message + 1] = string.format(
 						"Internet connected: %s", self._lastConnection)
-				self:sendMessage(table.concat(self._message, "; "))
+				self:sendMessage(table.concat(self._message, "; "), self.msgTextPattern1)
 				self._message        = {}
 				self._msgSentConnect = true
 			else
