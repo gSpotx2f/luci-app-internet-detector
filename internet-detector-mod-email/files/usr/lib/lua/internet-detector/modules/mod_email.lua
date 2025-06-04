@@ -70,6 +70,12 @@ function Module:init(t)
 	if t.mail_security ~= nil then
 		self.mailSecurity = t.mail_security
 	end
+	if tonumber(t.message_at_startup) == 1 then
+		self._msgSentDisconnect = false
+		self._disconnected      = false
+		self._msgSentConnect    = false
+		self._connected         = false
+	end
 
 	if unistd.access(self.mta, "x") then
 		self._enabled = true
@@ -142,7 +148,7 @@ function Module:sendMessage(msg, textPattern)
 	end
 end
 
-function Module:run(currentStatus, lastStatus, timeDiff, timeNow, inetChecked)
+function Module:run(currentStatus, lastStatus, timeDiff, timeNow)
 	if not self._enabled then
 		return
 	end
