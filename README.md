@@ -13,6 +13,7 @@ Internet-detector is an application for checking the availability of the Interne
 **OpenWrt >= 21.02.**
 
 **Dependences:** lua, luaposix, libuci-lua.
+
 **Recommended:** curl.
 
 ## Installation notes:
