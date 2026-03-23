@@ -435,9 +435,6 @@ msgid ""
 msgstr ""
 "Период времени отсутствия доступа в Интренет перед перезагрузкой устройства."
 
-msgid "Regular script"
-msgstr "Регулярный скрипт"
-
 msgid "Polling interval"
 msgstr "Интервал опроса"
 
@@ -450,8 +447,14 @@ msgstr "Прокси"
 msgid "Proxy host"
 msgstr "Хост прокси"
 
+msgid "Proxy password"
+msgstr "Пароль прокси"
+
 msgid "Proxy port"
 msgstr "Порт прокси"
+
+msgid "Proxy user"
+msgstr "Пользователь прокси"
 
 msgid "Public IP"
 msgstr "Публичный IP"
@@ -470,6 +473,9 @@ msgstr "Приём"
 
 msgid "Recipient"
 msgstr "Получатель"
+
+msgid "Regular script"
+msgstr "Регулярный скрипт"
 
 msgid "Request chat ID from bot API"
 msgstr "Запросить ID чата через API бота"

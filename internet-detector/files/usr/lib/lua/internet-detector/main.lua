@@ -53,15 +53,18 @@ local InternetDetector = {
 		proxy_type          = nil,
 		proxy_host          = nil,
 		proxy_port          = nil,
+		proxy_user          = nil,
+		proxy_passwd        = nil,
 		iface               = nil,
 		instance            = nil,
 	},
-	modules       = {},
-	parsedHosts   = {},
-	proxyString   = "",
-	uiCounter     = 0,
-	pidFile       = nil,
-	statusFile    = nil,
+	modules         = {},
+	parsedHosts     = {},
+	proxyAuthString = "",
+	proxyString     = "",
+	uiCounter       = 0,
+	pidFile         = nil,
+	statusFile      = nil,
 }
 InternetDetector.configDir      = string.format("/etc/%s", InternetDetector.appName)
 InternetDetector.modulesDir     = string.format(
@@ -277,6 +280,7 @@ function InternetDetector:TCPConnectionToHost(host, port)
 				if not ok then
 					self:debugOutput(string.format(
 						"SOCKET ERROR: %s, %s", errMsg, errNum))
+
 					unistd.close(sock)
 					return retCode
 				end
@@ -357,6 +361,7 @@ function InternetDetector:httpRequest(url)
 		curl,
 		retCode,
 		tostring(data)))
+
 	return retCode, data
 end
 
@@ -420,11 +425,18 @@ function InternetDetector:mainLoop()
 		self:parseUrls()
 		if (self.serviceConfig.proxy_type and self.serviceConfig.proxy_host and
 			self.serviceConfig.proxy_port) then
+			if self.serviceConfig.proxy_user and self.serviceConfig.proxy_passwd then
+				self.proxyAuthString = string.format(
+					' --proxy-user "%s:%s"',
+					self.serviceConfig.proxy_user,
+					self.serviceConfig.proxy_passwd)
+			end
 			self.proxyString = string.format(
-				" --proxy %s://%s:%d",
+				" --proxy %s://%s:%d%s",
 				self.serviceConfig.proxy_type,
 				self.serviceConfig.proxy_host,
-				self.serviceConfig.proxy_port)
+				self.serviceConfig.proxy_port,
+				self.proxyAuthString)
 		end
 	else
 		self:parseHosts()
@@ -516,7 +528,7 @@ function InternetDetector:mainLoop()
 			end
 		end
 
-		mTimeDiff   = 0
+		mTimeDiff = 0
 		for _, e in ipairs(self.modules) do
 			mTimeNow = time.clock_gettime(time.CLOCK_MONOTONIC).tv_sec
 			if mLastTime then

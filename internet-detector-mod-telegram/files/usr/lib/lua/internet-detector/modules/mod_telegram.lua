@@ -29,6 +29,8 @@ local Module = {
 	msgSendTimeout       = 5,
 	curlExec             = "/usr/bin/curl",
 	curlParams           = "-s -g --no-keepalive",
+	proxyAuthString      = "",
+	proxyString          = "",
 	status               = nil,
 	_enabled             = false,
 	_deadCounter         = 0,
@@ -68,6 +70,20 @@ function Module:init(t)
 	end
 	if t.chat_id ~= nil then
 		self.tgChatId = t.chat_id
+	end
+	if (t.proxy_type and t.proxy_host and t.proxy_port) then
+		if t.proxy_user and t.proxy_passwd then
+			self.proxyAuthString = string.format(
+				' --proxy-user "%s:%s"',
+				t.proxy_user,
+				t.proxy_passwd)
+		end
+		self.proxyString = string.format(
+			" --proxy %s://%s:%d%s",
+			t.proxy_type,
+			t.proxy_host,
+			t.proxy_port,
+			self.proxyAuthString)
 	end
 	if tonumber(t.message_at_startup) == 1 then
 		self._msgSentDisconnect = false
@@ -119,13 +135,21 @@ end
 
 function Module:httpRequest(url)
 	local retCode = 1, data
-	local fh      = io.popen(string.format(
-		'%s --connect-timeout %s %s "%s"; printf "\n$?";',
+
+	self.debugOutput(string.format("--- %s ---", self.name))
+
+	local curl    = string.format(
+		'%s%s --connect-timeout %s %s "%s"; printf "\n$?";',
 		self.curlExec,
+		self.proxyString,
 		self.connectTimeout,
 		self.curlParams,
 		url
-	), "r")
+	)
+
+	self.debugOutput(curl)
+
+	local fh = io.popen(curl, "r")
 	if fh then
 		data = fh:read("*a")
 		fh:close()
@@ -140,6 +164,12 @@ function Module:httpRequest(url)
 	else
 		retCode = 1
 	end
+
+	self.debugOutput(string.format(
+		"data = %s; retCode = %s\n",
+		tostring(data),
+		tostring(retCode)))
+
 	return retCode, data
 end
 

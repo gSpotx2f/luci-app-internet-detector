@@ -406,9 +406,6 @@ msgid ""
 "Period of time without Internet access until the device is rebooted."
 msgstr ""
 
-msgid "Regular script"
-msgstr ""
-
 msgid "Polling interval"
 msgstr ""
 
@@ -421,7 +418,13 @@ msgstr ""
 msgid "Proxy host"
 msgstr ""
 
+msgid "Proxy password"
+msgstr ""
+
 msgid "Proxy port"
+msgstr ""
+
+msgid "Proxy user"
 msgstr ""
 
 msgid "Public IP"
@@ -440,6 +443,9 @@ msgid "Receive"
 msgstr ""
 
 msgid "Recipient"
+msgstr ""
+
+msgid "Regular script"
 msgstr ""
 
 msgid "Request chat ID from bot API"

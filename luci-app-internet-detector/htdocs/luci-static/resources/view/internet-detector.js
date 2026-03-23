@@ -196,7 +196,6 @@ return view.extend({
 			{ name: 'icanhazip',   title: 'icanhazip.com (HTTP)' },
 		],
 	},
-	tgUpdatesURLPattern    : 'https://api.telegram.org/bot%s/getUpdates',
 	mm                     : false,
 	mmInit                 : false,
 	email                  : false,
@@ -292,6 +291,20 @@ return view.extend({
 		});
 	},
 
+	callTgChatId: rpc.declare({
+		object: 'luci.internet-detector-mod-telegram',
+		method: 'GetTgChatId',
+		params: [ 'botToken', 'proxyType', 'proxyHost', 'proxyPort', 'proxyUser', 'proxyPasswd' ],
+		expect: { '': {} }
+	}),
+
+	getTgChatId(botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd) {
+		return this.callTgChatId(
+			botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd).then(data => {
+			return data;
+		});
+	},
+
 	setInternetStatus() {
 		this.inetStatusArea.innerHTML = '';
 
@@ -303,7 +316,6 @@ return view.extend({
 			this.inetStatusArea.append(label);
 		} else {
 			this.inetStatus.instances.sort((a, b) => a.num - b.num);
-
 			for(let i of this.inetStatus.instances) {
 				let status    = _('Disconnected');
 				let className = 'id-label-status id-disconnected';
@@ -382,6 +394,7 @@ return view.extend({
 
 	getTgChatIdHandler(ev, instance) {
 		ev.preventDefault();
+
 		let botToken;
 		let botTokenInput = document.getElementById(
 			'widget.cbid.%s.%s.mod_telegram_api_token'.format(this.appName, instance));
@@ -392,41 +405,60 @@ return view.extend({
 			alert(_('Bot API token is missing!'));
 			return;
 		};
-		let apiURL = this.tgUpdatesURLPattern.format(botToken);
+		let proxyType      = null;
+		let proxyTypeInput = document.getElementById(
+			'widget.cbid.%s.%s.mod_telegram_proxy_type'.format(this.appName, instance));
+		if(proxyTypeInput) {
+			proxyType = proxyTypeInput.value;
+		};
+		let proxyHost      = null;
+		let proxyHostInput = document.getElementById(
+			'widget.cbid.%s.%s.mod_telegram_proxy_host'.format(this.appName, instance));
+		if(proxyTypeInput) {
+			proxyHost = proxyHostInput.value;
+		};
+		let proxyPort      = null;
+		let proxyPortInput = document.getElementById(
+			'widget.cbid.%s.%s.mod_telegram_proxy_port'.format(this.appName, instance));
+		if(proxyTypeInput) {
+			proxyPort = proxyPortInput.value;
+		};
+		let proxyUser      = null;
+		let proxyUserInput = document.getElementById(
+			'widget.cbid.%s.%s.mod_telegram_proxy_user'.format(this.appName, instance));
+		if(proxyTypeInput) {
+			proxyUser = proxyUserInput.value;
+		};
+		let proxyPasswd    = null;
+		let proxyPasswdInput = document.getElementById(
+			'widget.cbid.%s.%s.mod_telegram_proxy_passwd'.format(this.appName, instance));
+		if(proxyTypeInput) {
+			proxyPasswd = proxyPasswdInput.value;
+		};
 
-		console.log(`Requesting chat ID: ${apiURL}`);
-
-		return fetch(apiURL).then(r => {
+		return this.getTgChatId(botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd).then(r => {
 			if(r.ok) {
-				r.json().then(j => {
-					let chats = [];
-					if(j.ok && j.result) {
-						j.result.forEach(i => {
-							if(i.message && i.message.chat && i.message.chat.id) {
-								if(!chats.includes(i.message.chat.id)) {
-									chats.push(i.message.chat.id);
-								};
-							};
-						});
-					};
+				if(r.chatId) {
 					let tgChatIdInput = document.getElementById(
 						'widget.cbid.%s.%s.mod_telegram_chat_id'.format(this.appName, instance));
 					if(tgChatIdInput) {
-						if(chats.length == 0) {
+						if(r.chatId.length == 0) {
 							alert(_('No messages available. Write something to the bot and try again.'));
 						} else {
-							tgChatIdInput.value = chats[chats.length - 1];
+							tgChatIdInput.value = r.chatId[r.chatId.length - 1];
 							tgChatIdInput.focus();
 							tgChatIdInput.blur();
 						};
 					};
-				});
-			} else {
-				let status      = r.status;
-				let errorString = `${_('Error')} ${r.status}.`;
-				if(status == 404) {
-					errorString += ` ${_('Incorrect bot token?')}`;
 				};
+			} else {
+				let errCode     = r.errCode;
+				let errorString = `${_('Error')} ${errCode}.`;
+				if(errCode == 401 || errCode == 404) {
+					errorString += ` ${_('Incorrect bot token?')}`;
+				} else {
+					errorString += ` ${r.errDesc}.`;
+				}
 				alert(errorString);
 			};
 		}).catch(e => {
@@ -890,6 +922,21 @@ return view.extend({
 			o.rmempty   = false;
 			o.depends({ proxy_type: /.+/ });
 			o.modalonly = true;
+
+			// proxy_user
+			o = s.taboption('main', form.Value,
+				'proxy_user', _('Proxy user')
+			);
+			o.depends({ proxy_type: /(http|socks5h?)/ });
+			o.modalonly = true;
+
+			// proxy_passwd
+			o = s.taboption('main', form.Value,
+				'proxy_passwd', _('Proxy password')
+			);
+			o.depends({ proxy_type: /(http|socks5h?)/ });
+			o.modalonly = true;
+			o.password  = true;
 		};
 
 		// iface
@@ -1712,6 +1759,52 @@ return view.extend({
 						o.optional  = false;
 						o.rmempty   = false;
 						o.depends({ 'mod_telegram_api_token': /.+/ });
+
+						// proxy_type
+						o = s.taboption('telegram', form.ListValue,
+							'mod_telegram_proxy_type', _('Proxy')
+						);
+						o.value('', _('Disabled'));
+						o.value('http');
+						o.value('socks4');
+						o.value('socks4a');
+						o.value('socks5');
+						o.value('socks5h');
+						o.default   = '';
+						o.modalonly = true;
+
+						// proxy_host
+						o = s.taboption('telegram', form.Value,
+							'mod_telegram_proxy_host', _('Proxy host')
+						);
+						o.datatype  = 'host';
+						o.rmempty   = false;
+						o.depends({ mod_telegram_proxy_type: /.+/ });
+						o.modalonly = true;
+
+						// proxy_port
+						o = s.taboption('telegram', form.Value,
+							'mod_telegram_proxy_port', _('Proxy port')
+						);
+						o.datatype  = 'port';
+						o.rmempty   = false;
+						o.depends({ mod_telegram_proxy_type: /.+/ });
+						o.modalonly = true;
+
+						// proxy_user
+						o = s.taboption('telegram', form.Value,
+							'mod_telegram_proxy_user', _('Proxy user')
+						);
+						o.depends({ mod_telegram_proxy_type: /(http|socks5h?)/ });
+						o.modalonly = true;
+
+						// proxy_passwd
+						o = s.taboption('telegram', form.Value,
+							'mod_telegram_proxy_passwd', _('Proxy password')
+						);
+						o.depends({ mod_telegram_proxy_type: /(http|socks5h?)/ });
+						o.modalonly = true;
+						o.password  = true;
 
 						// message_at_startup
 						o = s.taboption('telegram', form.Flag,
