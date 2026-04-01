@@ -22,7 +22,7 @@ Internet-detector is an application for checking the availability of the Interne
 
 **OpenWrt >= 25.12:**
 
-    opkg update
+    apk update
     wget --no-check-certificate -O /tmp/internet-detector-1.7.2-r1.apk https://github.com/gSpotx2f/packages-openwrt/raw/master/25.12/internet-detector-1.7.2-r1.apk
     apk --allow-untrusted add /tmp/internet-detector-1.7.2-r1.apk
     rm /tmp/internet-detector-1.7.2-r1.apk
