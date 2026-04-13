@@ -31,6 +31,7 @@ local Module = {
 	curlParams           = "-s -g --no-keepalive",
 	proxyAuthString      = "",
 	proxyString          = "",
+	ifaceString          = "",
 	status               = nil,
 	_enabled             = false,
 	_deadCounter         = 0,
@@ -85,6 +86,9 @@ function Module:init(t)
 			t.proxy_port,
 			self.proxyAuthString)
 	end
+	if t.iface then
+		self.ifaceString = " --interface " .. t.iface
+	end
 	if tonumber(t.message_at_startup) == 1 then
 		self._msgSentDisconnect = false
 		self._disconnected      = false
@@ -138,9 +142,10 @@ function Module:httpRequest(url)
 
 	self.debugOutput(string.format("--- %s ---", self.name))
 
-	local curl    = string.format(
-		'%s%s --connect-timeout %s %s "%s"; printf "\n$?";',
+	local curl = string.format(
+		'%s%s%s --connect-timeout %s %s "%s"; printf "\n$?";',
 		self.curlExec,
+		self.ifaceString,
 		self.proxyString,
 		self.connectTimeout,
 		self.curlParams,

@@ -294,13 +294,13 @@ return view.extend({
 	callTgChatId: rpc.declare({
 		object: 'luci.internet-detector-mod-telegram',
 		method: 'GetTgChatId',
-		params: [ 'botToken', 'proxyType', 'proxyHost', 'proxyPort', 'proxyUser', 'proxyPasswd' ],
+		params: [ 'botToken', 'proxyType', 'proxyHost', 'proxyPort', 'proxyUser', 'proxyPasswd', 'iface' ],
 		expect: { '': {} }
 	}),
 
-	getTgChatId(botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd) {
+	getTgChatId(botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd, iface) {
 		return this.callTgChatId(
-			botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd).then(data => {
+			botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd, iface).then(data => {
 			return data;
 		});
 	},
@@ -405,38 +405,47 @@ return view.extend({
 			alert(_('Bot API token is missing!'));
 			return;
 		};
-		let proxyType      = null;
+		let proxyType      = '';
 		let proxyTypeInput = document.getElementById(
 			'widget.cbid.%s.%s.mod_telegram_proxy_type'.format(this.appName, instance));
 		if(proxyTypeInput) {
 			proxyType = proxyTypeInput.value;
 		};
-		let proxyHost      = null;
+		let proxyHost      = '';
 		let proxyHostInput = document.getElementById(
 			'widget.cbid.%s.%s.mod_telegram_proxy_host'.format(this.appName, instance));
-		if(proxyTypeInput) {
+		if(proxyHostInput) {
 			proxyHost = proxyHostInput.value;
 		};
-		let proxyPort      = null;
+		let proxyPort      = '';
 		let proxyPortInput = document.getElementById(
 			'widget.cbid.%s.%s.mod_telegram_proxy_port'.format(this.appName, instance));
-		if(proxyTypeInput) {
+		if(proxyPortInput) {
 			proxyPort = proxyPortInput.value;
 		};
-		let proxyUser      = null;
+		let proxyUser      = '';
 		let proxyUserInput = document.getElementById(
 			'widget.cbid.%s.%s.mod_telegram_proxy_user'.format(this.appName, instance));
-		if(proxyTypeInput) {
+		if(proxyUserInput) {
 			proxyUser = proxyUserInput.value;
 		};
-		let proxyPasswd    = null;
+		let proxyPasswd      = '';
 		let proxyPasswdInput = document.getElementById(
 			'widget.cbid.%s.%s.mod_telegram_proxy_passwd'.format(this.appName, instance));
-		if(proxyTypeInput) {
+		if(proxyPasswdInput) {
 			proxyPasswd = proxyPasswdInput.value;
 		};
+		let iface      = '';
+		let ifaceInput = document.getElementById(
+			'cbid.%s.%s.mod_telegram_iface'.format(this.appName, instance));
+		if(ifaceInput) {
+			let li = ifaceInput.querySelector('li[selected]');
+			if(li) {
+				iface = li.dataset.value || '';
+			};
+		};
 
-		return this.getTgChatId(botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd).then(r => {
+		return this.getTgChatId(botToken, proxyType, proxyHost, proxyPort, proxyUser, proxyPasswd, iface).then(r => {
 			if(r.ok) {
 				if(r.chatId) {
 					let tgChatIdInput = document.getElementById(
@@ -945,6 +954,7 @@ return view.extend({
 			_('Network device for Internet access. If not specified, the default device is used.')
 		);
 		o.noaliases = true;
+		o.modalonly = true;
 
 		// interval_up
 		o = s.taboption('main', form.ListValue,
@@ -1805,6 +1815,14 @@ return view.extend({
 						o.depends({ mod_telegram_proxy_type: /(http|socks5h?)/ });
 						o.modalonly = true;
 						o.password  = true;
+
+						// iface
+						o = s.taboption('telegram', widgets.DeviceSelect,
+							'mod_telegram_iface', _('Device'),
+							_('Network device for sending messages. If not specified, the default device is used.')
+						);
+						o.noaliases = true;
+						o.modalonly = true;
 
 						// message_at_startup
 						o = s.taboption('telegram', form.Flag,

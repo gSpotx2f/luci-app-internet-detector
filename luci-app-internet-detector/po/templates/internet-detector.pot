@@ -317,12 +317,17 @@ msgid ""
 "ModemManager."
 msgstr ""
 
-msgid ""
-"Network device for Internet access. If not specified, the default "
-"interface is used."
+msgid "Network device activity (kernel: netdev)"
 msgstr ""
 
-msgid "Network device activity (kernel: netdev)"
+msgid ""
+"Network device for Internet access. If not specified, the default "
+"device is used."
+msgstr ""
+
+msgid ""
+"Network device for sending messages. If not specified, the default "
+"device is used."
 msgstr ""
 
 msgid ""
